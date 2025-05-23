@@ -37,11 +37,14 @@ add_executable(ImGuiRenderExplore
   tools/iamgui/imgui_tables.cpp
   tools/iamgui/imgui_widgets.cpp
   main.cpp
+
+  source/ImGuiApplication.h
 )
 
 target_include_directories(
   ImGuiRenderExplore
   PUBLIC
+  "source/"
   "tools/iamgui"
   "tools/iamgui/backends"
   "tools/glad/include")
