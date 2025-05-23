@@ -1,0 +1,6 @@
+[submodule "tools/iamgui"]
+	path = tools/iamgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "tools/glfw"]
+	path = tools/glfw
+	url = https://github.com/glfw/glfw.git
