@@ -15,36 +15,49 @@ include(cmake/collect_source_code_and_resources.cmake)
 
 add_subdirectory("tools/glfw/")
 
+list(APPEND KERNEL "source/")
+
+set(PATHS "")
+list(APPEND PATHS ${KERNEL})
+cmake_language(CALL COLLECT_SOURCE_CODE_AND_RESOURCES PATHS)
+
+
 add_executable(ImGuiRenderExplore
-  # headers
+
+  # ImGUI
   tools/iamgui/imconfig.h
   tools/iamgui/imgui.h
   tools/iamgui/imgui_internal.h
-
-  tools/glad/include/glad/glad.h
-  tools/glad/include/KHR/khrplatform.h
-  tools/glad/src/glad.c
-
-  tools/iamgui/backends/imgui_impl_glfw.h
-  tools/iamgui/backends/imgui_impl_opengl3.h
-  tools/iamgui/backends/imgui_impl_opengl3.cpp
-  tools/iamgui/backends/imgui_impl_glfw.cpp
-
-  # sources
   tools/iamgui/imgui.cpp
   tools/iamgui/imgui_demo.cpp
   tools/iamgui/imgui_draw.cpp
   tools/iamgui/imgui_tables.cpp
   tools/iamgui/imgui_widgets.cpp
-  main.cpp
 
-  source/ImGuiApplication.h
+  # GLAD
+  tools/glad/include/glad/glad.h
+  tools/glad/include/KHR/khrplatform.h
+  tools/glad/src/glad.c
+
+  # ImGUI GLFW backend
+  tools/iamgui/backends/imgui_impl_glfw.h
+  tools/iamgui/backends/imgui_impl_glfw.cpp
+
+  # ImGUI OpenGL3 backend
+  tools/iamgui/backends/imgui_impl_opengl3.h
+  tools/iamgui/backends/imgui_impl_opengl3.cpp
+
+  ${SOURCES}
+  ${HEADERS}
+
+  # entry point
+  main.cpp
 )
 
 target_include_directories(
   ImGuiRenderExplore
   PUBLIC
-  "source/"
+  ${DIRECTORIES}
   "tools/iamgui"
   "tools/iamgui/backends"
   "tools/glad/include")

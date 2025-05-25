@@ -1,3 +1,41 @@
+#include "ImGuiApplication.h"
+#include "ImGuiApplicationWindow.h"
+
+int main(int, char**)
+{
+    ImGuiApplicationWindow mainWindow(
+        "Parent",
+        ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar,
+        ImGuiChildFlags_::ImGuiChildFlags_Borders);
+
+    ImGuiApplicationWindow childWindow1(
+        "Child-1",
+        ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar,
+        ImGuiChildFlags_::ImGuiChildFlags_Borders,
+        &mainWindow,
+        ImVec2(0.0, 0.0),
+        ImVec2(400.0, 300.0));
+
+    ImGuiApplicationWindow childWindow2(
+        "Child-2",
+        ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar,
+        ImGuiChildFlags_::ImGuiChildFlags_Borders,
+        &childWindow1,
+        ImVec2(0.0, 0.0),
+        ImVec2(200.0, 150.0));
+
+    ImGuiApplicationWindow childWindow3(
+        "Child-3",
+        ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar,
+        ImGuiChildFlags_::ImGuiChildFlags_Borders,
+        &childWindow2,
+        ImVec2(32.0, 32.0),
+        ImVec2(100.0, 75.0));
+
+    return ImGuiApplication::Instance()->exec();
+}
+
+/*
 // Dear ImGui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
 // (GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
 
@@ -34,86 +72,6 @@
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
-}
-
-#include "ImGuiApplication.h"
-
-void ShowExampleAppDockSpace()
-{
-    // create docking area
-    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-
-    // create menu bar
-    if (ImGui::BeginMainMenuBar())
-    {
-        // create menu file
-        if (ImGui::BeginMenu("File"))
-        {
-            ImGui::MenuItem("New", NULL, false, true);
-            ImGui::MenuItem("Open", NULL, false, true);
-            ImGui::MenuItem("Save", NULL, false, true);
-            ImGui::MenuItem("SaveAs", NULL, false, true);
-            ImGui::MenuItem("Close", NULL, false, true);
-            ImGui::EndMenu();
-        }
-
-        // create menu export
-        if (ImGui::BeginMenu("Export"))
-        {
-            if(ImGui::BeginMenu("RastrWin3"))
-            {
-                ImGui::MenuItem("Export model", NULL, false, true);
-                ImGui::MenuItem("Export graphics", NULL, false, true);
-                ImGui::EndMenu();
-            }
-
-            if(ImGui::BeginMenu("Eurostag"))
-            {
-                ImGui::MenuItem("Export model", NULL, false, true);
-                ImGui::MenuItem("Export graphics", NULL, false, true);
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMenu();
-        }
-
-        ImGui::EndMainMenuBar();
-    }
-
-    // Main body of the Demo window starts here.
-    if (ImGui::Begin("Dear ImGui Demo"))
-    {
-        //static char buffer[128] = "Hello, world!";
-        //ImGui::InputText("input text", buffer, IM_ARRAYSIZE(buffer));
-
-        //for(int i = 0; i < 1e1; i++)ImGui::Text("This is some useful text.");
-
-        // draw table with editable data
-        int  colCount = 3;
-        int  rowCount = 4;
-        char buffer[rowCount][colCount][128];
-        int  cellID   = 0;
-
-        if (ImGui::BeginTable("Table", colCount))
-        {
-            for (int row = 0; row < rowCount; row++)
-            {
-                ImGui::TableNextRow();
-                for (int column = 0; column < colCount; column++)
-                {
-                    ImGui::TableSetColumnIndex(column);
-
-                    ImGui::PushID(cellID++);
-                    ImGui::InputText("", buffer[row][column], IM_ARRAYSIZE(buffer[row][column]));
-                    ImGui::PopID();
-                }
-            }
-            ImGui::EndTable();
-        }
-
-        ImGui::End();
-    }
-    else ImGui::End();
 }
 
 
@@ -243,56 +201,7 @@ int main(int, char**)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        //---------------------------------------------------------------------------------------
-        // Here is my code
-        //---------------------------------------------------------------------------------------
-        if(show_my_code)
-        {
-            ShowExampleAppDockSpace();
-        }
-        else
-        {
-            //---------------------------------------------------------------------------------------
-            // Here is demo code
-            //---------------------------------------------------------------------------------------
-            // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-            if (show_demo_window)
-                ImGui::ShowDemoWindow(&show_demo_window);
-
-            // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-            {
-                static float f = 0.0f;
-                static int counter = 0;
-
-                ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-                ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-                ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-                ImGui::Checkbox("Another Window", &show_another_window);
-
-                ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-                if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                    counter++;
-                ImGui::SameLine();
-                ImGui::Text("counter = %d", counter);
-
-                ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-                ImGui::End();
-            }
-
-            // 3. Show another simple window.
-            if (show_another_window)
-            {
-                ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-                ImGui::Text("Hello from another window!");
-                if (ImGui::Button("Close Me"))
-                    show_another_window = false;
-                ImGui::End();
-            }
-            //----------------------------------------------------------------------------------------
-        }
+        // Here should be my code
 
         // Rendering
         ImGui::Render();
@@ -331,3 +240,4 @@ int main(int, char**)
 
     return 0;
 }
+*/
