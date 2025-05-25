@@ -35,9 +35,8 @@ public:
 protected:
 
     // info
-    std::string             m_Name   = std::string();
-    ImGuiApplicationObject* m_Parent = nullptr;
-
+    std::string                        m_Name   = std::string();
+    ImGuiApplicationObject*            m_Parent = nullptr;
     std::list<ImGuiApplicationObject*> m_Children;
 
     void attach_child(ImGuiApplicationObject* _Child);

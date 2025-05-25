@@ -10,7 +10,7 @@ public:
     ImGuiApplicationRenderer(){}
 
     // virtual destructor
-    virtual ~ImGuiApplicationRenderer(){}
+    ~ImGuiApplicationRenderer(){}
 
     // interface
     virtual bool render() = 0;
