@@ -20,11 +20,11 @@ class ImGuiApplicationFileSystemLayer : public ImGuiApplicationLayer
 {
 public:
 
-    enum PressedButton
+    enum State
     {
-        Button_None,
-        Button_OK,
-        Button_Cancel
+        Undefined,
+        Accepted,
+        Canceled
     };
 
     // constructors
@@ -49,10 +49,17 @@ public:
     virtual ~ImGuiApplicationFileSystemLayer(){}
 
     // getters
-    ImGuiApplicationFileSystemLayer::PressedButton PressedButton()
+    bool isAccepted()
     {
-        return m_PressedButton;
+        return m_DialogState == State::Accepted;
     }
+
+    bool isCanceled()
+    {
+        return m_DialogState == State::Canceled ||
+               m_DialogState == State::Undefined;
+    }
+
 
     // ImGuiApplicationLayer
     virtual void Update() override
@@ -231,12 +238,12 @@ public:
                 ImGui::SameLine(0, spacing);
 
                 if(ImGui::Button("Cancel"))
-                    m_PressedButton = ImGuiApplicationFileSystemLayer::PressedButton::Button_Cancel;
+                    m_DialogState = ImGuiApplicationFileSystemLayer::State::Canceled;
 
                 ImGui::SameLine(0, spacing);
 
                 if(ImGui::Button("Ok"))
-                    m_PressedButton = ImGuiApplicationFileSystemLayer::PressedButton::Button_OK;
+                    m_DialogState = ImGuiApplicationFileSystemLayer::State::Accepted;
             }
         }
 
@@ -252,8 +259,8 @@ protected:
     std::map<std::string, bool> m_FormatFilter = std::map<std::string, bool>();
     std::string m_Title;
 
-    enum ImGuiApplicationFileSystemLayer::PressedButton m_PressedButton =
-        ImGuiApplicationFileSystemLayer::PressedButton::Button_None;
+    enum ImGuiApplicationFileSystemLayer::State m_DialogState =
+        ImGuiApplicationFileSystemLayer::State::Undefined;
 
     void ChangeCurrentPath(std::filesystem::path _Path)
     {
