@@ -14,8 +14,6 @@
 #include <ctime>
 #include <set>
 
-#include <iostream>
-
 class ImGuiApplicationFileSystemLayer : public ImGuiApplicationLayer
 {
 public:
@@ -27,21 +25,12 @@ public:
     }
 
     // destructor
-    virtual ~ImGuiApplicationFileSystemLayer()
-    {
-        std::cout << "~ImGuiApplicationFileSystemLayer() \n";
-    }
+    virtual ~ImGuiApplicationFileSystemLayer(){}
 
     // ImGuiApplicationLayer
     virtual void Update() override
     {
         ImGui::Begin(m_Title.c_str(), &m_Opened, ImGuiWindowFlags_None);
-
-        std::cout << "m_Opened " << m_Opened << "\n";
-
-        if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) &&
-            !ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl))
-            m_SelectedPaths.clear();
 
         // cd
         if(ImGui::Button("cd ../") ||
@@ -67,7 +56,8 @@ public:
         // rmdir
         ImGui::SameLine();
 
-        if(ImGui::Button("rmdir") || ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete))
+        if(ImGui::Button("rmdir") ||
+            ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete))
         {
             for(auto selectedDirectoryEntry : m_SelectedPaths)
                 std::filesystem::remove_all(selectedDirectoryEntry);
@@ -76,6 +66,10 @@ public:
         // pwd
         ImGui::SameLine();
         ImGui::Text("Current directory: %s", std::filesystem::current_path().string().c_str());
+
+        // catch mouse event and clear selection
+        if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Escape))
+            m_SelectedPaths.clear();
 
         // dirs
         if (ImGui::BeginTable(
