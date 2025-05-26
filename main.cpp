@@ -156,9 +156,12 @@ int main(int, char**)
 {
     //(void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>();
 
-    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemLayer>("C:/SDK/Qt_Projects/ImGuiRenderExplore");
+    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemLayer>(
+        std::filesystem::current_path(),
+        "FileDialog",
+        std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
 
-    //(void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>();
+    (void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>();
 
     return ImGuiApplication::Instance()->
         setTitle("ImGuiApplication")->

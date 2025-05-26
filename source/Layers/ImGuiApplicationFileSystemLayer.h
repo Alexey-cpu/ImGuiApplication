@@ -13,32 +13,68 @@
 #include <string>
 #include <ctime>
 #include <set>
+#include <map>
 
+// ImGuiApplicationFileSystemLayer
 class ImGuiApplicationFileSystemLayer : public ImGuiApplicationLayer
 {
 public:
 
-    // constructors
-    ImGuiApplicationFileSystemLayer(std::filesystem::path _RootPath, std::string _Title = "ImGuiApplicationFileSystemLayer") : m_Title(_Title)
+    enum PressedButton
     {
+        Button_None,
+        Button_OK,
+        Button_Cancel
+    };
+
+    // constructors
+    ImGuiApplicationFileSystemLayer(
+        std::filesystem::path    _RootPath = std::filesystem::current_path(),
+        std::string              _Title    = "ImGuiApplicationFileSystemLayer",
+        std::vector<std::string> _Formats  = std::vector<std::string>()) :
+        m_Title(_Title)
+    {
+        // setup current path
         std::filesystem::current_path(_RootPath);
+
+        // instantiate format filter
+        for(auto format : _Formats)
+        {
+            if(!format.empty())
+                m_FormatFilter[format] = true;
+        }
     }
 
     // destructor
     virtual ~ImGuiApplicationFileSystemLayer(){}
 
+    // getters
+    ImGuiApplicationFileSystemLayer::PressedButton PressedButton()
+    {
+        return m_PressedButton;
+    }
+
     // ImGuiApplicationLayer
     virtual void Update() override
     {
-        ImGui::Begin(m_Title.c_str(), &m_Opened, ImGuiWindowFlags_None);
+        // fill-up a format filter
+        for(const auto& directoryEntry :
+             std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred()))
+        {
+            auto extention = directoryEntry.path().extension().string();
+
+            if(!extention.empty() &&
+                m_FormatFilter.find(extention) == m_FormatFilter.end())
+                m_FormatFilter[extention] = false;
+        }
+
+        // create window
+        ImGui::Begin(m_Title.c_str(), &m_Opened, ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar);
 
         // cd
         if(ImGui::Button("cd ../") ||
             ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Backspace))
-        {
-            if(std::filesystem::exists(std::filesystem::current_path().parent_path()))
-                std::filesystem::current_path(std::filesystem::current_path().parent_path());
-        }
+            ChangeCurrentPath(std::filesystem::current_path().parent_path());
 
         // mkdir
         ImGui::SameLine();
@@ -60,7 +96,16 @@ public:
             ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete))
         {
             for(auto selectedDirectoryEntry : m_SelectedPaths)
-                std::filesystem::remove_all(selectedDirectoryEntry);
+            {
+                try
+                {
+                    std::filesystem::remove_all(selectedDirectoryEntry);
+                }
+                catch(...)
+                {
+
+                }
+            }
         }
 
         // pwd
@@ -76,7 +121,7 @@ public:
                 "Directories",
                 3,
                 ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable,
-                ImVec2(0.0, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeightWithSpacing())))
+                ImVec2(0.0, ImGui::GetContentRegionAvail().y - 2.0 * ImGui::GetTextLineHeightWithSpacing())))
         {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Last write time", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthStretch);
@@ -87,6 +132,12 @@ public:
             for(const auto& directoryEntry :
                  std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred()))
             {
+                auto iterator = m_FormatFilter.find(directoryEntry.path().extension().string());
+
+                if(!directoryEntry.is_directory() &&
+                    (iterator == m_FormatFilter.end() || !iterator->second))
+                    continue;
+
                 ImGui::TableNextRow();
 
                 // configure 'Name' column
@@ -114,7 +165,7 @@ public:
                 {
                     if(directoryEntry.is_directory() &&
                         (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) || ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Enter)))
-                        std::filesystem::current_path(directoryEntry.path());
+                        ChangeCurrentPath(directoryEntry.path());
 
                     if(ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl))
                     {
@@ -134,6 +185,63 @@ public:
             ImGui::EndTable();
         }
 
+        // create dialog buttons
+        ImGui::BeginChild(
+            (m_Title + "_Buttons").c_str(),
+            ImVec2(0.0, 2.0 * ImGui::GetTextLineHeightWithSpacing()),
+            ImGuiChildFlags_::ImGuiChildFlags_Borders,
+            ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_NoScrollbar);
+
+        {
+            // create dialog buttons
+            std::string preview = std::string();
+
+            for(auto& supportedFormats : m_FormatFilter)
+            {
+                if(!supportedFormats.first.empty() && supportedFormats.second)
+                    preview += supportedFormats.first + " ";
+            }
+
+            if(preview.empty())
+                preview = "none";
+
+            if(ImGui::BeginCombo("Format filter", preview.c_str()))
+            {
+                for(auto& supportedFormats : m_FormatFilter)
+                {
+                    if(supportedFormats.first.empty())
+                        continue;
+
+                    ImGui::Checkbox(
+                        supportedFormats.first.c_str(),
+                        &supportedFormats.second);
+                }
+
+                ImGui::EndCombo();
+            }
+
+            // compute dialog buttons geometry
+            {
+                ImGuiStyle& style = ImGui::GetStyle();
+                float spacing = 8.0;
+                float size    = ImGui::CalcTextSize("Cancel").x + ImGui::CalcTextSize("Ok").x + style.FramePadding.x * 2.0f + 2.0 * spacing;
+                float avail   = ImGui::GetContentRegionAvail().x;
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (avail - size) * 2.0);
+
+                ImGui::SameLine(0, spacing);
+
+                if(ImGui::Button("Cancel"))
+                    m_PressedButton = ImGuiApplicationFileSystemLayer::PressedButton::Button_Cancel;
+
+                ImGui::SameLine(0, spacing);
+
+                if(ImGui::Button("Ok"))
+                    m_PressedButton = ImGuiApplicationFileSystemLayer::PressedButton::Button_OK;
+            }
+        }
+
+        ImGui::EndChild();
+
         ImGui::End();
     }
 
@@ -141,7 +249,23 @@ protected:
 
     // info
     std::set<std::filesystem::path> m_SelectedPaths;
+    std::map<std::string, bool> m_FormatFilter = std::map<std::string, bool>();
     std::string m_Title;
+
+    enum ImGuiApplicationFileSystemLayer::PressedButton m_PressedButton =
+        ImGuiApplicationFileSystemLayer::PressedButton::Button_None;
+
+    void ChangeCurrentPath(std::filesystem::path _Path)
+    {
+        if(!std::filesystem::exists(_Path))
+            return;
+
+        // clear selection
+        m_SelectedPaths.clear();
+
+        // change current path
+        std::filesystem::current_path(_Path);
+    }
 };
 
 #endif // IMGUIAPPLICATIONFILESYSTEMLAYER_H
