@@ -34,6 +34,18 @@ ImGuiApplication* ImGuiApplication::setConfigFlags(ImGuiConfigFlags _ConfigFlags
     return Instance();
 }
 
+ImGuiApplication* ImGuiApplication::setIniFileLocation(std::filesystem::path _Path)
+{
+    m_IniFileLocation = _Path.string();
+    return Instance();
+}
+
+ImGuiApplication* ImGuiApplication::setLogFileLocation(std::filesystem::path _Path)
+{
+    m_LogFileLocation = _Path.string();
+    return Instance();
+}
+
 ImGuiApplication* ImGuiApplication::Maximize()
 {
     if(Instance()->m_MainWindow != nullptr)
@@ -69,8 +81,23 @@ int ImGuiApplication::Execute()
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
         // update children
-        for(auto child : m_RenderingQueue)
-            child->Update();
+        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        {
+            // remove closed layer
+            if((*it)->isClosed())
+            {
+                auto rm = it;
+                it++;
+                m_RenderingQueue.erase(rm);
+
+                // stop if there's nothing to render
+                if(it == m_RenderingQueue.end())
+                    break;
+            }
+
+            // render next layer
+            (*it)->Render();
+        }
 
         // Render contents
         ImGui::Render();
@@ -88,7 +115,9 @@ int ImGuiApplication::Execute()
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Update and Render additional Platform Windows
-        auto io = ImGui::GetIO();
+        auto& io = ImGui::GetIO();
+        io.IniFilename = m_IniFileLocation.c_str();
+        io.LogFilename = m_LogFileLocation.c_str();
 
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {

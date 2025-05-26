@@ -5,8 +5,7 @@
 #include <ImGuiApplicationLayer.h>
 
 // ImGUI
-#include "imgui.h"
-#include <stdio.h>
+#include <imgui.h>
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
@@ -17,7 +16,8 @@
 
 // STL
 #include <string>
-#include <iostream>
+#include <list>
+#include <filesystem>
 
 // ImGuiApplication
 class ImGuiApplication
@@ -38,14 +38,17 @@ public:
     ImGuiApplication* setSize(ImVec2 _Size);
     ImGuiApplication* setBackgroundColor(ImVec4 _BackgroundColor);
     ImGuiApplication* setConfigFlags(ImGuiConfigFlags _ConfigFlags);
+    ImGuiApplication* setIniFileLocation(std::filesystem::path _Path);
+    ImGuiApplication* setLogFileLocation(std::filesystem::path _Path);
+
     ImGuiApplication* Maximize();
     int Execute();
 
-    template<typename __type>
-    std::shared_ptr<__type> push()
+    template<typename __type, typename ... __parameters>
+    std::shared_ptr<__type> Push(__parameters... _Parameters)
     {
         // create layer
-        auto layer = std::make_shared<__type>();
+        auto layer = std::make_shared<__type>(_Parameters ...);
 
         // push layer into rendering queue
         m_RenderingQueue.push_back(layer);
@@ -54,7 +57,7 @@ public:
         return layer;
     }
 
-    void pop(std::shared_ptr<ImGuiApplicationLayer> _Layer)
+    void Pop(std::shared_ptr<ImGuiApplicationLayer> _Layer)
     {
         // find layer
         auto iterator =
@@ -81,7 +84,10 @@ private:
         ImGuiConfigFlags_::ImGuiConfigFlags_DockingEnable     |
         ImGuiConfigFlags_::ImGuiConfigFlags_ViewportsEnable;
 
-    std::vector<std::shared_ptr<ImGuiApplicationLayer>> m_RenderingQueue;
+    std::list<std::shared_ptr<ImGuiApplicationLayer>> m_RenderingQueue;
+
+    std::string m_IniFileLocation = std::filesystem::current_path().string();
+    std::string m_LogFileLocation = std::filesystem::current_path().string();
 
     // constructors
     ImGuiApplication();

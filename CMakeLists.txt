@@ -58,9 +58,9 @@ target_include_directories(
   ImGuiRenderExplore
   PUBLIC
   ${DIRECTORIES}
-  "tools/iamgui"
-  "tools/iamgui/backends"
-  "tools/glad/include")
+  "tools/iamgui/"
+  "tools/iamgui/backends/"
+  "tools/glad/include/")
 
 #target_link_libraries(ImGuiRenderExplore Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(ImGuiRenderExplore glfw)
