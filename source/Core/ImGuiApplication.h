@@ -57,20 +57,6 @@ public:
         return layer;
     }
 
-    void Pop(std::shared_ptr<ImGuiApplicationLayer> _Layer)
-    {
-        // find layer
-        auto iterator =
-            std::find(
-            m_RenderingQueue.begin(),
-            m_RenderingQueue.end(),
-            _Layer);
-
-        // remove layer
-        if(iterator != m_RenderingQueue.end())
-            m_RenderingQueue.erase(iterator);
-    }
-
 private:
 
     // info

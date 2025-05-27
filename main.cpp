@@ -1,5 +1,6 @@
 #include <ImGuiApplication.h>
-#include <ImGuiApplicationFileSystemLayer.h>
+#include <ImGuiApplicationFileSystemDialogLayer.h>
+#include <ImGuiApplicationDialogLayer.h>
 
 // ImGuiDemoLayer
 class ImGuiDemoLayer : public ImGuiApplicationLayer
@@ -7,7 +8,7 @@ class ImGuiDemoLayer : public ImGuiApplicationLayer
 public:
 
     // constructors
-    ImGuiDemoLayer(){}
+    ImGuiDemoLayer(std::string _Name = "ImGuiDemoLayer") : ImGuiApplicationLayer(_Name){}
 
     // virtual destructor
     virtual ~ImGuiDemoLayer(){}
@@ -63,105 +64,16 @@ protected:
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 };
 
-class ImGuiApplicationDemoLayer : public ImGuiApplicationLayer
-{
-public:
-
-    // constructors
-    ImGuiApplicationDemoLayer(){}
-
-    // virtual destructor
-    virtual ~ImGuiApplicationDemoLayer(){}
-
-    // ImGuiApplicationLayer
-    virtual void Update() override
-    {
-        /*
-        // open Dialog Simple
-        if (ImGui::Button("Open File Dialog"))
-            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp");
-
-        // display
-        if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
-        {
-            // action if OK
-            if (ImGuiFileDialog::Instance()->IsOk())
-            {
-                std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-                std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-
-                // action
-            }
-
-            // close
-            ImGuiFileDialog::Instance()->Close();
-        }
-        */
-    }
-
-    void ShowWindow1()
-    {
-        ImGui::Begin("Window-1", &m_Open, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar);
-
-        // create menubar
-        if(ImGui::BeginMenuBar())
-        {
-            if(ImGui::BeginMenu("File", true))
-            {
-                if(ImGui::MenuItem("New  (Ctrl + N)            ")){}
-                if(ImGui::MenuItem("Open (Ctrl + O)            ")){};
-                if(ImGui::MenuItem("Save (Ctrl + S)            ")){};
-                if(ImGui::MenuItem("Save as (Ctrl + Shift + O) ")){};
-                if(ImGui::MenuItem("Close (Ctrl + Q)           ")){};
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMenuBar();
-        }
-
-        ImGui::End();
-    }
-
-    void ShowWindow2()
-    {
-        ImGui::Begin("Window-2", &m_Open, ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar);
-
-        // create menubar
-        if(ImGui::BeginMenuBar())
-        {
-            if(ImGui::BeginMenu("File", true))
-            {
-                if(ImGui::MenuItem("New (Ctrl + N)")){}
-                if(ImGui::MenuItem("Open (Ctrl + O)")){};
-                if(ImGui::MenuItem("Save (Ctrl + S)")){};
-                if(ImGui::MenuItem("Save as (Ctrl + Shift + O)")){};
-                if(ImGui::MenuItem("Close (Ctrl + Q)")){};
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMenuBar();
-        }
-
-        ImGui::End();
-    }
-
-protected:
-
-    bool m_Open = true;
-};
-
 int main(int, char**)
 {
-    //(void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>();
+    //(void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemPathsRenamerPopupLayer>();
 
-    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemLayer>(
+    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemDialogLayer>(
         std::filesystem::current_path(),
         "FileDialog",
         std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
 
-    (void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>();
+    //(void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>("ImGuiDemoLayer");
 
     return ImGuiApplication::Instance()->
         setTitle("ImGuiApplication")->

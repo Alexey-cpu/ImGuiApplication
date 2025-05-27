@@ -36,13 +36,13 @@ ImGuiApplication* ImGuiApplication::setConfigFlags(ImGuiConfigFlags _ConfigFlags
 
 ImGuiApplication* ImGuiApplication::setIniFileLocation(std::filesystem::path _Path)
 {
-    m_IniFileLocation = _Path.string();
+    m_IniFileLocation = std::filesystem::path(_Path.string() + "/" + "imgui.ini").make_preferred().string();
     return Instance();
 }
 
 ImGuiApplication* ImGuiApplication::setLogFileLocation(std::filesystem::path _Path)
 {
-    m_LogFileLocation = _Path.string();
+    m_LogFileLocation = std::filesystem::path(_Path.string() + "/" + "imgui_log.txt").make_preferred().string();
     return Instance();
 }
 
@@ -60,27 +60,24 @@ int ImGuiApplication::Execute()
     if(m_MainWindow == nullptr)
         return 0;
 
+    auto& io = ImGui::GetIO();
+    auto font = io.Fonts->AddFontFromFileTTF("C:/SDK/Qt_Projects/ImGuiRenderExplore/tools/iamgui/misc/fonts/Karla-Regular.ttf", 24);
+    io.Fonts->Build();
+
+    //ImGui::Text("Hello"); // use the default font (which is the first loaded font)
+    //ImGui::PushFont(font);
+    //ImGui::Text("Hello with another font");
+    //ImGui::PopFont();
+
     // Process main loop
     while (!glfwWindowShouldClose(m_MainWindow))
     {
-        // Poll events
-        glfwPollEvents();
+        // update .ini and .log files locations before starting a rendering frame
+        ImGuiIO& io = ImGui::GetIO();
+        io.IniFilename = m_IniFileLocation.c_str();
+        io.LogFilename = m_LogFileLocation.c_str();
 
-        if (glfwGetWindowAttrib(m_MainWindow, GLFW_ICONIFIED) != 0)
-        {
-            ImGui_ImplGlfw_Sleep(10);
-            continue;
-        }
-
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        // setup dockspace over the whole viewport
-        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-
-        // update children
+        // begin render children
         for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
         {
             // remove closed layer
@@ -95,9 +92,34 @@ int ImGuiApplication::Execute()
                     break;
             }
 
-            // render next layer
-            (*it)->Render();
+            // begin render next child layer
+            (*it)->Begin();
         }
+
+        // Poll events
+        glfwPollEvents();
+
+        if (glfwGetWindowAttrib(m_MainWindow, GLFW_ICONIFIED) != 0)
+        {
+            ImGui_ImplGlfw_Sleep(1);
+            continue;
+        }
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // setup dockspace over the whole viewport
+        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+
+        // render children
+        ImGui::PushFont(font);
+
+        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+            (*it)->Render();
+
+        ImGui::PopFont();
 
         // Render contents
         ImGui::Render();
@@ -115,10 +137,6 @@ int ImGuiApplication::Execute()
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Update and Render additional Platform Windows
-        auto& io = ImGui::GetIO();
-        io.IniFilename = m_IniFileLocation.c_str();
-        io.LogFilename = m_LogFileLocation.c_str();
-
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             GLFWwindow* backup_current_context = glfwGetCurrentContext();
@@ -130,6 +148,10 @@ int ImGuiApplication::Execute()
 
         // swap buffers
         glfwSwapBuffers(m_MainWindow);
+
+        // end render children
+        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+            (*it)->End();
     }
 
     return 1;
