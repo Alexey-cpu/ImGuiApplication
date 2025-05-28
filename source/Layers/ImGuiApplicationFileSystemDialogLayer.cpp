@@ -1,7 +1,5 @@
 #include <ImGuiApplicationFileSystemDialogLayer.h>
 
-#include <iostream>
-
 // ImGuiApplicationFileSystemPathsRenamerDialogLayer
 ImGuiApplicationFileSystemPathsRenamerDialogLayer::ImGuiApplicationFileSystemPathsRenamerDialogLayer(const std::vector<ImGuiApplicationFileSystemPathItem>& m_Items) :
     ImGuiApplicationDialogLayer("ImGuiApplicationFileSystemPathsRenamerPopupLayer"),
@@ -30,7 +28,7 @@ void ImGuiApplicationFileSystemPathsRenamerDialogLayer::DrawContent()
         int index  = 0;
         for(auto& item : m_Items)
         {
-            item.m_Filename.push_back('\0');
+            item.m_FolderNameBuffer.push_back('\0');
 
             ImGui::TableNextRow();
 
@@ -55,7 +53,7 @@ void ImGuiApplicationFileSystemPathsRenamerDialogLayer::DrawContent()
             ImGui::TableSetColumnIndex(1);
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
             ImGui::PushID(item.m_Path.c_str());
-            ImGui::InputText("", &m_Items[index].m_Filename[0], m_Items[index].m_Filename.size(), ImGuiInputTextFlags_::ImGuiInputTextFlags_ElideLeft);
+            ImGui::InputText("", &m_Items[index].m_FolderNameBuffer[0], m_Items[index].m_FolderNameBuffer.size(), ImGuiInputTextFlags_::ImGuiInputTextFlags_ElideLeft);
             ImGui::PopID();
             index++;
         }
@@ -86,7 +84,11 @@ void ImGuiApplicationFileSystemPathsRenamerDialogLayer::DrawButtons()
         {
             std::filesystem::rename(
                 item.m_Path,
-                std::filesystem::path(item.m_Path.parent_path().string() + "/" + item.m_Filename).make_preferred());
+#if defined(_WIN32) | defined(_WIN64)
+                std::filesystem::path(item.m_Path.parent_path().string() + "/" + utf2cp(item.m_FolderNameBuffer)).make_preferred());
+#else
+                std::filesystem::path(item.m_Path.parent_path().string() + "/" + item.m_FolderNameBuffer).make_preferred());
+#endif
         }
 
         // setup state
@@ -111,9 +113,6 @@ ImGuiApplicationFileSystemDialogLayer::ImGuiApplicationFileSystemDialogLayer(
 
     // setup a format filter
     SetupFormatFilter(_Formats);
-
-    // reserve currently selected file buffer
-    m_CurrentDirectoryBuffer.reserve(128);
 }
 
 ImGuiApplicationFileSystemDialogLayer::~ImGuiApplicationFileSystemDialogLayer(){}
@@ -148,18 +147,16 @@ void ImGuiApplicationFileSystemDialogLayer::DrawContent()
 
     // pwd
     ImGui::SameLine();
-    m_CurrentDirectoryBuffer = std::filesystem::current_path().make_preferred().string();
-    m_CurrentDirectoryBuffer.push_back('\0');
-
-    if(!m_CurrentDirectoryBuffer.empty())
+    m_CurrentDirectory = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path());
+    if(!m_CurrentDirectory.m_DirectoryBuffer.empty())
     {
         ImGui::PushID("CurrentDirectory");
 
         if(ImGui::InputText("",
-                             &m_CurrentDirectoryBuffer[0],
-                             m_CurrentDirectoryBuffer.size(),
+                             &m_CurrentDirectory.m_DirectoryBuffer[0],
+                             m_CurrentDirectory.m_DirectoryBuffer.size(),
                              ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_ElideLeft))
-            ChangeCurrentPath(std::filesystem::path(m_CurrentDirectoryBuffer));
+            ChangeCurrentPath(std::filesystem::path(m_CurrentDirectory.m_DirectoryBuffer));
 
         ImGui::PopID();
     }
@@ -184,11 +181,7 @@ void ImGuiApplicationFileSystemDialogLayer::DrawContent()
             (iterator == m_FormatFilter.end() || !iterator->second))
             continue;
 
-        filteredItems.push_back(ImGuiApplicationFileSystemPathItem(
-            directoryEntry.is_directory(),
-            directoryEntry.path(),
-            directoryEntry.path().filename().string()
-            ));
+        filteredItems.push_back(ImGuiApplicationFileSystemPathItem(directoryEntry.path()));
     }
 
     // draw table
@@ -210,7 +203,7 @@ void ImGuiApplicationFileSystemDialogLayer::DrawContent()
 
             // configure 'Name' column
             ImGui::TableSetColumnIndex(0);
-            ImGui::TextUnformatted(directoryEntry.m_Filename.c_str());
+            ImGui::TextUnformatted(directoryEntry.m_FolderNameBuffer.c_str());
 
             // configure 'Last write time' column
             ImGui::TableSetColumnIndex(1);
@@ -247,10 +240,11 @@ void ImGuiApplicationFileSystemDialogLayer::DrawContent()
                     m_SelectedPaths.push_back(directoryEntry);
                 }
 
-                if(!directoryEntry.m_IsDirectory)
-                    m_CurrentFilenameBuffer = directoryEntry.m_Path.string().c_str();
-                else
-                    m_CurrentFilenameBuffer.clear();
+
+                m_CurrentFile =
+                    directoryEntry.m_IsDirectory ?
+                        ImGuiApplicationFileSystemPathItem() :
+                            ImGuiApplicationFileSystemPathItem(directoryEntry.m_Path);
             }
 
             if (ImGui::BeginPopupContextItem()) // <-- use last item id as popup id
@@ -271,7 +265,7 @@ void ImGuiApplicationFileSystemDialogLayer::DrawContent()
     }
 
     // create format filter
-    ImGui::TextUnformatted((m_CurrentFilenameBuffer.empty() ? "Directory selected" : m_CurrentFilenameBuffer.c_str()));
+    ImGui::TextUnformatted((m_CurrentFile.m_FileNameBuffer.empty() ? "Directory selected" : m_CurrentFile.m_DirectoryBuffer.c_str()));
 
     std::string preview = std::string();
 

@@ -61,8 +61,17 @@ int ImGuiApplication::Execute()
         return 0;
 
     auto& io = ImGui::GetIO();
-    auto font = io.Fonts->AddFontFromFileTTF("C:/SDK/Qt_Projects/ImGuiRenderExplore/tools/iamgui/misc/fonts/Karla-Regular.ttf", 24);
+    //auto font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Tahoma.ttf", 24);
+
+    auto font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Verdana.ttf", 24, NULL, io.Fonts->GetGlyphRangesCyrillic());
+
     io.Fonts->Build();
+
+    //io.Fonts->AddCustomRectFontGlyph(io.Fonts->GetGlyphRangesCyrillic());
+
+    //io.Fonts->AddFontFromMemoryTTF(&inter, sizeof inter, 16 * dpi_scale, NULL, io.Fonts->GetGlyphRangesCyrillic());
+
+    //io.GetGlyphRangesCyrillic()
 
     //ImGui::Text("Hello"); // use the default font (which is the first loaded font)
     //ImGui::PushFont(font);

@@ -15,7 +15,7 @@ include(cmake/collect_source_code_and_resources.cmake)
 
 add_subdirectory("tools/glfw/")
 
-list(APPEND KERNEL "source/")
+list(APPEND KERNEL "source/" "tools/iconv-lite/" "tools/glad/")
 
 set(PATHS "")
 list(APPEND PATHS ${KERNEL})
@@ -35,9 +35,9 @@ add_executable(ImGuiRenderExplore
   tools/iamgui/imgui_widgets.cpp
 
   # GLAD
-  tools/glad/include/glad/glad.h
-  tools/glad/include/KHR/khrplatform.h
-  tools/glad/src/glad.c
+  #tools/glad/include/glad/glad.h
+  #tools/glad/include/KHR/khrplatform.h
+  #tools/glad/src/glad.c
 
   # ImGUI GLFW backend
   tools/iamgui/backends/imgui_impl_glfw.h

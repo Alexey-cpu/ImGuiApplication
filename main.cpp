@@ -16,6 +16,23 @@ public:
     // ImGuiApplicationLayer
     virtual void Update() override
     {
+        /*
+        auto& io = ImGui::GetIO();
+
+        auto path = std::filesystem::current_path();
+
+        for(const auto& directoryEntry :
+             std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred()))
+        {
+            std::string cyrillic_text = "Пример текста на русском";
+
+            ImGui::TextUnformatted(cyrillic_text.c_str());
+            ImGui::SameLine();
+            ImGui::TextUnformatted(cp2utf(directoryEntry.path().filename().string()).c_str());
+        }
+        */
+
+        /*
         ImGuiIO& io = ImGui::GetIO();
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
@@ -54,6 +71,7 @@ public:
                 show_another_window = false;
             ImGui::End();
         }
+        */
     }
 
 protected:
@@ -72,7 +90,6 @@ int main(int, char**)
     std::setlocale(LC_NUMERIC,"C");
 #endif
 
-    //(void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemPathsRenamerPopupLayer>();
 
     (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemDialogLayer>(
         std::filesystem::current_path(),

@@ -15,6 +15,10 @@
 #include <stack>
 #include <map>
 
+#if defined(_WIN32) | defined(_WIN64)
+#include <iconvlite.h>
+#endif
+
 // ImGuiApplicationFileSystemPathItem
 class ImGuiApplicationFileSystemPathItem
 {
@@ -22,12 +26,18 @@ public:
 
     // constructor
     ImGuiApplicationFileSystemPathItem(
-        bool                  _IsDirectory,
-        std::filesystem::path _Path,
-        std::string           _Filename) :
-        m_IsDirectory(_IsDirectory),
+        std::filesystem::path _Path = std::filesystem::path()) :
+        m_IsDirectory(std::filesystem::is_directory(_Path)),
         m_Path(_Path),
-        m_Filename(_Filename){}
+#if defined(_WIN32) | defined(_WIN64)
+        m_DirectoryBuffer(cp2utf(_Path.string())),
+        m_FolderNameBuffer(cp2utf(_Path.filename().string())),
+        m_FileNameBuffer((m_IsDirectory ? std::string() : m_FolderNameBuffer))
+#else
+        m_DirectoryBuffer(_Path.string()),
+        m_FilenameBuffer(_Path.filename().string())
+#endif
+    {}
 
     // destryctor
     ~ImGuiApplicationFileSystemPathItem(){}
@@ -35,15 +45,18 @@ public:
     // operators override
     bool operator == (ImGuiApplicationFileSystemPathItem _Other)
     {
-        return m_Path == _Other.m_Path &&
-               m_Filename == _Other.m_Filename &&
-               m_IsDirectory == _Other.m_IsDirectory;
+        return m_Path            == _Other.m_Path            &&
+               m_DirectoryBuffer == _Other.m_DirectoryBuffer &&
+               m_FolderNameBuffer  == _Other.m_FolderNameBuffer  &&
+               m_IsDirectory     == _Other.m_IsDirectory;
     }
 
     // info
     bool                  m_IsDirectory;
     std::filesystem::path m_Path;
-    std::string           m_Filename;
+    std::string           m_DirectoryBuffer;
+    std::string           m_FolderNameBuffer;
+    std::string           m_FileNameBuffer;
 };
 
 // ImGuiApplicationFileSystemPathsRenamerDialogLayer
@@ -87,12 +100,12 @@ public:
 protected:
 
     // info
-    std::string                                     m_Title                  = "ImGuiApplicationFileSystemBrowserDialogLayer";
-    std::string                                     m_CurrentDirectoryBuffer = std::filesystem::current_path().string();
-    std::string                                     m_CurrentFilenameBuffer  = std::filesystem::current_path().string();
-    std::map<std::string, bool>                     m_FormatFilter           = std::map<std::string, bool>();
-    std::vector<ImGuiApplicationFileSystemPathItem> m_SelectedPaths          = std::vector<ImGuiApplicationFileSystemPathItem>();
-    std::stack<std::filesystem::path>               m_PathStack;
+    std::string                                     m_Title            = "ImGuiApplicationFileSystemBrowserDialogLayer";
+    ImGuiApplicationFileSystemPathItem              m_CurrentDirectory = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
+    ImGuiApplicationFileSystemPathItem              m_CurrentFile      = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
+    std::map<std::string, bool>                     m_FormatFilter     = std::map<std::string, bool>();
+    std::vector<ImGuiApplicationFileSystemPathItem> m_SelectedPaths    = std::vector<ImGuiApplicationFileSystemPathItem>();
+    std::stack<std::filesystem::path>               m_PathStack        = std::stack<std::filesystem::path>();
 
     // service methods
     void ChangeCurrentPath(std::filesystem::path _Path);
