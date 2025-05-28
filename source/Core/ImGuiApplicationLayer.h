@@ -11,11 +11,10 @@ class ImGuiApplicationLayer
 public:
 
     // constructors
-    ImGuiApplicationLayer(std::string _Name) :
-        m_Name(_Name){}
+    ImGuiApplicationLayer(std::string _Name);
 
     // virtual destructor
-    virtual ~ImGuiApplicationLayer(){}
+    virtual ~ImGuiApplicationLayer();
 
     // getters
     bool isClosed() const;
@@ -26,9 +25,10 @@ public:
     void Render();
 
     // virtual functions to override
-    virtual void Begin();
+    virtual void Start();
+    virtual void BeforeUpdate();
     virtual void Update();
-    virtual void End();
+    virtual void AfterUpdate();
 
     template<typename __type, typename ... __parameters>
     std::shared_ptr<__type> Push(__parameters... _Parameters)

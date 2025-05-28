@@ -60,12 +60,15 @@ int ImGuiApplication::Execute()
     if(m_MainWindow == nullptr)
         return 0;
 
-    auto& io = ImGui::GetIO();
+    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        (*it)->Start();
+
+    //auto& io = ImGui::GetIO();
     //auto font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Tahoma.ttf", 24);
 
-    auto font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Verdana.ttf", 24, NULL, io.Fonts->GetGlyphRangesCyrillic());
+    //auto font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Verdana.ttf", 24, NULL, io.Fonts->GetGlyphRangesCyrillic());
 
-    io.Fonts->Build();
+    //io.Fonts->Build();
 
     //io.Fonts->AddCustomRectFontGlyph(io.Fonts->GetGlyphRangesCyrillic());
 
@@ -86,25 +89,6 @@ int ImGuiApplication::Execute()
         io.IniFilename = m_IniFileLocation.c_str();
         io.LogFilename = m_LogFileLocation.c_str();
 
-        // begin render children
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        {
-            // remove closed layer
-            if((*it)->isClosed())
-            {
-                auto rm = it;
-                it++;
-                m_RenderingQueue.erase(rm);
-
-                // stop if there's nothing to render
-                if(it == m_RenderingQueue.end())
-                    break;
-            }
-
-            // begin render next child layer
-            (*it)->Begin();
-        }
-
         // Poll events
         glfwPollEvents();
 
@@ -123,12 +107,33 @@ int ImGuiApplication::Execute()
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
         // render children
-        ImGui::PushFont(font);
+        //ImGui::PushFont(font);
+
+        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        {
+            // remove closed layer
+            if((*it)->isClosed())
+            {
+                auto rm = it;
+                it++;
+                m_RenderingQueue.erase(rm);
+
+                // stop if there's nothing to render
+                if(it == m_RenderingQueue.end())
+                    break;
+            }
+
+            // begin render next child layer
+            (*it)->BeforeUpdate();
+        }
 
         for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
             (*it)->Render();
 
-        ImGui::PopFont();
+        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+            (*it)->AfterUpdate();
+
+        //ImGui::PopFont();
 
         // Render contents
         ImGui::Render();
@@ -157,10 +162,6 @@ int ImGuiApplication::Execute()
 
         // swap buffers
         glfwSwapBuffers(m_MainWindow);
-
-        // end render children
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-            (*it)->End();
     }
 
     return 1;

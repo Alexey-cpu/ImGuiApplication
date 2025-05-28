@@ -15,29 +15,35 @@
 #include <stack>
 #include <map>
 
-#if defined(_WIN32) | defined(_WIN64)
-#include <iconvlite.h>
-#endif
+// pugixml
+#include <pugixml.hpp>
 
 // ImGuiApplicationFileSystemPathItem
 class ImGuiApplicationFileSystemPathItem
 {
 public:
 
+    struct FileInfo
+    {
+        std::wstring       name      = std::wstring();
+        std::string        extention = std::string();
+        unsigned long long size      = 0;
+    };
+
     // constructor
-    ImGuiApplicationFileSystemPathItem(
-        std::filesystem::path _Path = std::filesystem::path()) :
-        m_IsDirectory(std::filesystem::is_directory(_Path)),
-        m_Path(_Path),
-#if defined(_WIN32) | defined(_WIN64)
-        m_DirectoryBuffer(cp2utf(_Path.string())),
-        m_FolderNameBuffer(cp2utf(_Path.filename().string())),
-        m_FileNameBuffer((m_IsDirectory ? std::string() : m_FolderNameBuffer))
-#else
-        m_DirectoryBuffer(_Path.string()),
-        m_FilenameBuffer(_Path.filename().string())
-#endif
-    {}
+    ImGuiApplicationFileSystemPathItem(std::filesystem::path _Path = std::filesystem::path()) : m_Path(_Path)
+    {
+        // setup bufferes content
+        m_PathBuffer     = pugi::as_utf8(_Path.wstring());
+        m_FileNameBuffer = pugi::as_utf8(_Path.filename().wstring());
+
+        // add empty symbols here
+        for(size_t i = 0; i < 4 * _Path.wstring().size(); i++)
+        {
+            m_PathBuffer.push_back('\0');
+            m_FileNameBuffer.push_back('\0');
+        }
+    }
 
     // destryctor
     ~ImGuiApplicationFileSystemPathItem(){}
@@ -45,18 +51,50 @@ public:
     // operators override
     bool operator == (ImGuiApplicationFileSystemPathItem _Other)
     {
-        return m_Path            == _Other.m_Path            &&
-               m_DirectoryBuffer == _Other.m_DirectoryBuffer &&
-               m_FolderNameBuffer  == _Other.m_FolderNameBuffer  &&
-               m_IsDirectory     == _Other.m_IsDirectory;
+        return m_Path == _Other.m_Path;
     }
 
+    bool isDirectory() const
+    {
+        return std::filesystem::is_directory(m_Path);
+    }
+
+    FileInfo getFileInfo(int _DotsCount = 2)
+    {
+        std::filesystem::path path      = m_Path;
+        std::string           extention = std::string();
+
+        for(int i = 0; i < _DotsCount; i++)
+        {
+            extention = extention.append(path.extension().string());
+            path = path.stem();
+        }
+
+        try
+        {
+            return
+            {
+                path.filename(),
+                extention,
+                std::filesystem::file_size(path)
+
+            };
+        }
+        catch(...)
+        {
+            return
+            {
+                path.filename(),
+                extention
+            };
+        }
+    };
+
     // info
-    bool                  m_IsDirectory;
     std::filesystem::path m_Path;
-    std::string           m_DirectoryBuffer;
-    std::string           m_FolderNameBuffer;
+    std::string           m_PathBuffer;
     std::string           m_FileNameBuffer;
+    bool                  m_Selected = false;
 };
 
 // ImGuiApplicationFileSystemPathsRenamerDialogLayer
@@ -65,7 +103,9 @@ class ImGuiApplicationFileSystemPathsRenamerDialogLayer : public ImGuiApplicatio
 public:
 
     // constructors
-    ImGuiApplicationFileSystemPathsRenamerDialogLayer(const std::vector<ImGuiApplicationFileSystemPathItem>& m_Items = std::vector<ImGuiApplicationFileSystemPathItem>());
+    ImGuiApplicationFileSystemPathsRenamerDialogLayer(
+        const std::vector<ImGuiApplicationFileSystemPathItem>& _Items =
+        std::vector<ImGuiApplicationFileSystemPathItem>());
 
     // destructor
     virtual ~ImGuiApplicationFileSystemPathsRenamerDialogLayer();
@@ -100,23 +140,27 @@ public:
 protected:
 
     // info
-    std::string                                     m_Title            = "ImGuiApplicationFileSystemBrowserDialogLayer";
-    ImGuiApplicationFileSystemPathItem              m_CurrentDirectory = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
-    ImGuiApplicationFileSystemPathItem              m_CurrentFile      = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
-    std::map<std::string, bool>                     m_FormatFilter     = std::map<std::string, bool>();
-    std::vector<ImGuiApplicationFileSystemPathItem> m_SelectedPaths    = std::vector<ImGuiApplicationFileSystemPathItem>();
-    std::stack<std::filesystem::path>               m_PathStack        = std::stack<std::filesystem::path>();
+    std::string                                     m_Title             = "ImGuiApplicationFileSystemBrowserDialogLayer";
+    ImGuiApplicationFileSystemPathItem              m_CurrentFolder     = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
+    ImGuiApplicationFileSystemPathItem              m_CurrentFile       = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
+    std::map<std::string, bool>                     m_FormatFilter      = std::map<std::string, bool>();
+    std::vector<ImGuiApplicationFileSystemPathItem> m_SelectedPaths     = std::vector<ImGuiApplicationFileSystemPathItem>();
+    std::vector<ImGuiApplicationFileSystemPathItem> m_FilesToCopy       = std::vector<ImGuiApplicationFileSystemPathItem>();
+    std::stack<std::filesystem::path>               m_VisitedPathsStack = std::stack<std::filesystem::path>();
 
     // service methods
     void ChangeCurrentPath(std::filesystem::path _Path);
     void SetupFormatFilter(const std::vector<std::string>& _Formats = std::vector<std::string>());
+    void DrawContextMenu();
 
     // callbacks
-    void OnBackwardButtonClicked();
-    void OnForwardButtonClicked();
-    void OnMakeDirectioryButtonClicked();
-    void OnRemoveDirectoryButtonClicked();
-    void OnRenameDirectoryButtonClicked();
+    void OnGoUpperAction();
+    void OnGoDeeperAction();
+    void OnCreateFolderAction();
+    void OnRemoveFilesOrFoldersAction();
+    void OnRenameFilesOrFoldersAction();
+    void OnCopyFilesOrFoldersAction();
+    void OnPasteFilesOrFoldersAction();
 };
 
 #endif // IMGUIAPPLICATIONFILESYSTEMDIALOGLAYER_H

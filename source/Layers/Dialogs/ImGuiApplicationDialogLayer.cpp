@@ -38,27 +38,25 @@ void ImGuiApplicationDialogLayer::Update()
         for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
             (*it)->Render();
 
-        if(ImGui::BeginChild(
-                "Content",
-                ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - (ImGui::CalcTextSize("Button").y + style.FramePadding.x * 2.0f + m_ButtonsSpacing * 2.0f)),
-                ImGuiChildFlags_::ImGuiChildFlags_Borders,
-                ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar))
-        {
-            DrawContent();
+        ImGui::BeginChild(
+            "Content",
+            ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - (ImGui::CalcTextSize("Button").y + style.FramePadding.x * 2.0f + m_ButtonsSpacing * 2.0f)),
+            ImGuiChildFlags_::ImGuiChildFlags_Borders,
+            ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar);
 
-            ImGui::EndChild();
-        }
+        DrawContent();
 
-        if(ImGui::BeginChild(
-                "Buttons",
-                ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y),
-                ImGuiChildFlags_::ImGuiChildFlags_Borders,
-                ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar))
-        {
-            DrawButtons();
+        ImGui::EndChild();
 
-            ImGui::EndChild();
-        }
+        ImGui::BeginChild(
+            "Buttons",
+            ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y),
+            ImGuiChildFlags_::ImGuiChildFlags_Borders,
+            ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar);
+
+        DrawButtons();
+
+        ImGui::EndChild();
 
         ImGui::EndPopup();
     }

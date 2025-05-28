@@ -37,7 +37,9 @@ void ImGuiApplicationLayer::Render()
         Update();
 }
 
-void ImGuiApplicationLayer::Begin()
+void ImGuiApplicationLayer::Start(){}
+
+void ImGuiApplicationLayer::BeforeUpdate()
 {
     // draw stacked modals
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
@@ -55,7 +57,7 @@ void ImGuiApplicationLayer::Begin()
         }
 
         // begin render next child layer
-        (*it)->Begin();
+        (*it)->BeforeUpdate();
     }
 }
 
@@ -65,8 +67,8 @@ void ImGuiApplicationLayer::Update()
         (*it)->Render();
 }
 
-void ImGuiApplicationLayer::End()
+void ImGuiApplicationLayer::AfterUpdate()
 {
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        (*it)->End();
+        (*it)->AfterUpdate();
 }

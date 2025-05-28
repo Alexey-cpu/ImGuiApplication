@@ -1,6 +1,10 @@
 #include <ImGuiApplication.h>
 #include <ImGuiApplicationFileSystemDialogLayer.h>
+#include <ImGuiApplicationFileSystemWatcher.h>
 #include <ImGuiApplicationDialogLayer.h>
+#include <ImGuiApplicationFontsProvider.h>
+
+#include <filesystem>
 
 // ImGuiDemoLayer
 class ImGuiDemoLayer : public ImGuiApplicationLayer
@@ -8,7 +12,10 @@ class ImGuiDemoLayer : public ImGuiApplicationLayer
 public:
 
     // constructors
-    ImGuiDemoLayer(std::string _Name = "ImGuiDemoLayer") : ImGuiApplicationLayer(_Name){}
+    ImGuiDemoLayer(std::string _Name = "ImGuiDemoLayer") : ImGuiApplicationLayer(_Name)
+    {
+        //m_FileSystemWatcher = ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemWatcher>();
+    }
 
     // virtual destructor
     virtual ~ImGuiDemoLayer(){}
@@ -16,23 +23,6 @@ public:
     // ImGuiApplicationLayer
     virtual void Update() override
     {
-        /*
-        auto& io = ImGui::GetIO();
-
-        auto path = std::filesystem::current_path();
-
-        for(const auto& directoryEntry :
-             std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred()))
-        {
-            std::string cyrillic_text = "Пример текста на русском";
-
-            ImGui::TextUnformatted(cyrillic_text.c_str());
-            ImGui::SameLine();
-            ImGui::TextUnformatted(cp2utf(directoryEntry.path().filename().string()).c_str());
-        }
-        */
-
-        /*
         ImGuiIO& io = ImGui::GetIO();
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
@@ -71,10 +61,11 @@ public:
                 show_another_window = false;
             ImGui::End();
         }
-        */
     }
 
 protected:
+
+    //std::shared_ptr<ImGuiApplicationFileSystemWatcher> m_FileSystemWatcher;
 
     bool show_another_window = false;
     bool show_demo_window    = false;
@@ -84,19 +75,21 @@ protected:
 
 int main(int, char**)
 {
+
 #ifdef __APPLE__
     setlocale(LC_NUMERIC,"C");
 #else
     std::setlocale(LC_NUMERIC,"C");
 #endif
 
+    //(void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemDialogLayer>(
+    //    std::filesystem::current_path(),
+    //    "FileDialog",
+    //    std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
 
-    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemDialogLayer>(
-        std::filesystem::current_path(),
-        "FileDialog",
-        std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
+    (void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>("ImGuiDemoLayer");
 
-    //(void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>("ImGuiDemoLayer");
+    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFontsProvider>("C:\\SDK\\Qt_Projects\\ImGuiRenderExplore\\shared\\fonts");
 
     return ImGuiApplication::Instance()->
         setTitle("ImGuiApplication")->
@@ -105,4 +98,6 @@ int main(int, char**)
         setBackgroundColor(ImVec4(64.0 / 255.0, 64.0 / 255.0, 64.0 / 255.0, 1.0))->
         Maximize()->
         Execute();
+
+    return 1;
 }
