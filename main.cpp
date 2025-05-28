@@ -66,6 +66,12 @@ protected:
 
 int main(int, char**)
 {
+#ifdef __APPLE__
+    setlocale(LC_NUMERIC,"C");
+#else
+    std::setlocale(LC_NUMERIC,"C");
+#endif
+
     //(void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemPathsRenamerPopupLayer>();
 
     (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemDialogLayer>(
