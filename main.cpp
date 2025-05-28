@@ -2,7 +2,8 @@
 #include <ImGuiApplicationFileSystemDialogLayer.h>
 #include <ImGuiApplicationFileSystemWatcher.h>
 #include <ImGuiApplicationDialogLayer.h>
-#include <ImGuiApplicationFontsProvider.h>
+#include <ImGuiApplicationFontsLayer.h>
+#include <ImGuiApplicationStyleLayer.h>
 
 #include <filesystem>
 
@@ -89,7 +90,11 @@ int main(int, char**)
 
     (void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>("ImGuiDemoLayer");
 
-    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFontsProvider>("C:\\SDK\\Qt_Projects\\ImGuiRenderExplore\\shared\\fonts");
+    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFontsLayer>("C:\\SDK\\Qt_Projects\\ImGuiRenderExplore\\shared\\fonts");
+
+    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationStyleLayer>();
+
+    // ImGuiApplicationStyleLayer
 
     return ImGuiApplication::Instance()->
         setTitle("ImGuiApplication")->
