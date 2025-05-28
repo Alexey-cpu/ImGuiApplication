@@ -18,71 +18,17 @@ public:
     virtual ~ImGuiApplicationLayer(){}
 
     // getters
-    bool isClosed() const
-    {
-        return !m_Opened;
-    }
+    bool isClosed() const;
+    bool isHidden() const;
+    void Close();
+    void Show();
+    void Hide();
+    void Render();
 
-    bool isHidden() const
-    {
-        return !m_Shown;
-    }
-
-    void Close()
-    {
-        m_Opened = false;
-    }
-
-    void Show()
-    {
-        m_Shown = true;
-    }
-
-    void Hide()
-    {
-        m_Shown = false;
-    }
-
-    // interface
-    void Render()
-    {
-        if(!isHidden())
-            Update();
-    }
-
-    virtual void Begin()
-    {
-        // draw stacked modals
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        {
-            // remove closed layer
-            if((*it)->isClosed())
-            {
-                auto rm = it;
-                it++;
-                m_RenderingQueue.erase(rm);
-
-                // stop if there's nothing to render
-                if(it == m_RenderingQueue.end())
-                    break;
-            }
-
-            // begin render next child layer
-            (*it)->Begin();
-        }
-    }
-
-    virtual void Update()
-    {
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-            (*it)->Render();
-    }
-
-    virtual void End()
-    {
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-            (*it)->End();
-    }
+    // virtual functions to override
+    virtual void Begin();
+    virtual void Update();
+    virtual void End();
 
     template<typename __type, typename ... __parameters>
     std::shared_ptr<__type> Push(__parameters... _Parameters)
