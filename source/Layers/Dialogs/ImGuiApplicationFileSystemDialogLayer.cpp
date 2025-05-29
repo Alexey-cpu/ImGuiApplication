@@ -526,6 +526,9 @@ void ImGuiApplicationFileSystemDialogLayer::OnCreateFolderAction()
     {
 
     }
+
+    m_NewFolder.m_FileNameBuffer = pugi::as_utf8(newFolderName);
+    m_NewFolder.m_FileNameBuffer.push_back('\0');
 }
 
 void ImGuiApplicationFileSystemDialogLayer::OnRemoveFilesOrFoldersAction()
