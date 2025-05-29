@@ -60,39 +60,12 @@ int ImGuiApplication::Execute()
     if(m_MainWindow == nullptr)
         return 0;
 
-    // Awake all the layers
-    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        (*it)->Awake();
+    Awake();
 
     // Process main loop
-    while (!glfwWindowShouldClose(m_MainWindow))
+    while (!glfwWindowShouldClose(m_MainWindow) && !isClosed())
     {
-        // update .ini and .log files locations before starting a rendering frame
-        ImGuiIO& io = ImGui::GetIO();
-        io.IniFilename = m_IniFileLocation.c_str();
-        io.LogFilename = m_LogFileLocation.c_str();
-
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        {
-            // remove closed layer
-            if((*it)->isClosed())
-            {
-                // call on closed callback
-                (*it)->OnClose();
-
-                // remove from rendering queue
-                auto rm = it;
-                it++;
-                m_RenderingQueue.erase(rm);
-
-                // stop if there's nothing to render
-                if(it == m_RenderingQueue.end())
-                    break;
-            }
-
-            // begin render next child layer
-            (*it)->Start();
-        }
+        Start();
 
         // Poll events
         glfwPollEvents();
@@ -108,11 +81,7 @@ int ImGuiApplication::Execute()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // setup dockspace over the whole viewport
-        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-            (*it)->Update();
+        Update();
 
         // Render contents
         ImGui::Render();
@@ -130,7 +99,7 @@ int ImGuiApplication::Execute()
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Update and Render additional Platform Windows
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             GLFWwindow* backup_current_context = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
@@ -143,13 +112,66 @@ int ImGuiApplication::Execute()
         glfwSwapBuffers(m_MainWindow);
     }
 
-    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        (*it)->Finish();
+    Finish();
 
     return 1;
 }
 
-ImGuiApplication::ImGuiApplication()
+void ImGuiApplication::OnClose(){}
+
+void ImGuiApplication::OnAwake()
+{
+    // Awake all the layers
+    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        (*it)->Awake();
+}
+
+void ImGuiApplication::OnStart()
+{
+    // update .ini and .log files locations before starting a rendering frame
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = m_IniFileLocation.c_str();
+    io.LogFilename = m_LogFileLocation.c_str();
+
+    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+    {
+        // remove closed layer
+        if((*it)->isClosed())
+        {
+            // call on closed callback
+            (*it)->OnClose();
+
+            // remove from rendering queue
+            auto rm = it;
+            it++;
+            m_RenderingQueue.erase(rm);
+
+            // stop if there's nothing to render
+            if(it == m_RenderingQueue.end())
+                break;
+        }
+
+        // begin render next child layer
+        (*it)->Start();
+    }
+}
+
+void ImGuiApplication::OnUpdate()
+{
+    // setup dockspace over the whole viewport
+    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+
+    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        (*it)->Update();
+}
+
+void ImGuiApplication::OnFinish()
+{
+    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        (*it)->Finish();
+}
+
+ImGuiApplication::ImGuiApplication() : ImGuiApplicationLayer("ImGuiApplication")
 {
     // initialization
     glfwSetErrorCallback(glfwErrorCallback);

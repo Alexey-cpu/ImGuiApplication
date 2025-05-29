@@ -16,11 +16,10 @@
 
 // STL
 #include <string>
-#include <list>
 #include <filesystem>
 
 // ImGuiApplication
-class ImGuiApplication
+class ImGuiApplication : public ImGuiApplicationLayer
 {
 public:
 
@@ -41,21 +40,16 @@ public:
     ImGuiApplication* setIniFileLocation(std::filesystem::path _Path);
     ImGuiApplication* setLogFileLocation(std::filesystem::path _Path);
 
+    // API
     ImGuiApplication* Maximize();
     int Execute();
 
-    template<typename __type, typename ... __parameters>
-    std::shared_ptr<__type> Push(__parameters... _Parameters)
-    {
-        // create layer
-        auto layer = std::make_shared<__type>(_Parameters ...);
-
-        // push layer into rendering queue
-        m_RenderingQueue.push_back(layer);
-
-        // return previously create layer
-        return layer;
-    }
+    // virtual functions to override
+    virtual void OnClose() override;
+    virtual void OnAwake() override;
+    virtual void OnStart() override;
+    virtual void OnUpdate() override;
+    virtual void OnFinish() override;
 
 private:
 
@@ -69,8 +63,6 @@ private:
         ImGuiConfigFlags_::ImGuiConfigFlags_NavEnableGamepad  |
         ImGuiConfigFlags_::ImGuiConfigFlags_DockingEnable     |
         ImGuiConfigFlags_::ImGuiConfigFlags_ViewportsEnable;
-
-    std::list<std::shared_ptr<ImGuiApplicationLayer>> m_RenderingQueue;
 
     std::string m_IniFileLocation = std::filesystem::current_path().string();
     std::string m_LogFileLocation = std::filesystem::current_path().string();
