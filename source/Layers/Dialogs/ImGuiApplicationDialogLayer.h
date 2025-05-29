@@ -34,7 +34,7 @@ public:
     bool isUndefined() const;
 
     // ImGuiApplicationLayer
-    virtual void Update() override;
+    virtual void OnUpdate() override;
     virtual void DrawContent() = 0;
     virtual void DrawButtons() = 0;
 

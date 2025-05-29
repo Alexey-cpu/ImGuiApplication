@@ -2,8 +2,7 @@
 #include <ImGuiApplicationFileSystemDialogLayer.h>
 #include <ImGuiApplicationFileSystemWatcher.h>
 #include <ImGuiApplicationDialogLayer.h>
-#include <ImGuiApplicationFontsLayer.h>
-#include <ImGuiApplicationStyleLayer.h>
+#include <ImGuiApplicationStyleSettingsLayer.h>
 
 #include <filesystem>
 
@@ -22,7 +21,7 @@ public:
     virtual ~ImGuiDemoLayer(){}
 
     // ImGuiApplicationLayer
-    virtual void Update() override
+    virtual void OnUpdate() override
     {
         ImGuiIO& io = ImGui::GetIO();
 
@@ -83,16 +82,14 @@ int main(int, char**)
     std::setlocale(LC_NUMERIC,"C");
 #endif
 
-    //(void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemDialogLayer>(
-    //    std::filesystem::current_path(),
-    //    "FileDialog",
-    //    std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
+    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemDialogLayer>(
+        std::filesystem::current_path(),
+        "FileDialog",
+        std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
 
-    (void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>("ImGuiDemoLayer");
+    //(void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>("ImGuiDemoLayer");
 
-    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationFontsLayer>("C:\\SDK\\Qt_Projects\\ImGuiRenderExplore\\shared\\fonts");
-
-    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationStyleLayer>();
+    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationStyleSettingsLayer>("C:\\SDK\\Qt_Projects\\ImGuiRenderExplore\\shared");
 
     // ImGuiApplicationStyleLayer
 

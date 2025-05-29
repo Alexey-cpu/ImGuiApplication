@@ -21,7 +21,7 @@ bool ImGuiApplicationDialogLayer::isUndefined() const
     return m_DialogState == ImGuiApplicationDialogState::Undefined;
 }
 
-void ImGuiApplicationDialogLayer::Update()
+void ImGuiApplicationDialogLayer::OnUpdate()
 {
     ImGuiStyle& style = ImGui::GetStyle();
 
@@ -36,7 +36,7 @@ void ImGuiApplicationDialogLayer::Update()
     {
         // draw stacked modals
         for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-            (*it)->Render();
+            (*it)->Update();
 
         ImGui::BeginChild(
             "Content",

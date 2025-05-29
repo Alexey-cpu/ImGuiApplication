@@ -11,35 +11,40 @@ bool ImGuiApplicationLayer::isClosed() const
     return !m_Opened;
 }
 
-bool ImGuiApplicationLayer::isHidden() const
-{
-    return !m_Shown;
-}
-
 void ImGuiApplicationLayer::Close()
 {
     m_Opened = false;
 }
 
-void ImGuiApplicationLayer::Show()
+void ImGuiApplicationLayer::Awake()
 {
-    m_Shown = true;
+    OnAwake();
 }
 
-void ImGuiApplicationLayer::Hide()
+void ImGuiApplicationLayer::Start()
 {
-    m_Shown = false;
+    OnStart();
 }
 
-void ImGuiApplicationLayer::Render()
+void ImGuiApplicationLayer::Update()
 {
-    if(!isHidden())
-        Update();
+    OnUpdate();
 }
 
-void ImGuiApplicationLayer::Start(){}
+void ImGuiApplicationLayer::Finish()
+{
+    OnFinish();
+}
 
-void ImGuiApplicationLayer::BeforeUpdate()
+void ImGuiApplicationLayer::OnClose()
+{
+    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        (*it)->OnClose();
+}
+
+void ImGuiApplicationLayer::OnAwake(){}
+
+void ImGuiApplicationLayer::OnStart()
 {
     // draw stacked modals
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
@@ -57,18 +62,18 @@ void ImGuiApplicationLayer::BeforeUpdate()
         }
 
         // begin render next child layer
-        (*it)->BeforeUpdate();
+        (*it)->OnStart();
     }
 }
 
-void ImGuiApplicationLayer::Update()
+void ImGuiApplicationLayer::OnUpdate()
 {
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        (*it)->Render();
+        (*it)->Update();
 }
 
-void ImGuiApplicationLayer::AfterUpdate()
+void ImGuiApplicationLayer::OnFinish()
 {
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        (*it)->AfterUpdate();
+        (*it)->OnFinish();
 }

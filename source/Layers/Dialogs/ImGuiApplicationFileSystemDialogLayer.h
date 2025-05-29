@@ -38,7 +38,7 @@ public:
         m_FileNameBuffer = pugi::as_utf8(_Path.filename().wstring());
 
         // add empty symbols here
-        for(size_t i = 0; i < 4 * _Path.wstring().size(); i++)
+        for(size_t i = 0; i < 4 * std::max<size_t>(_Path.wstring().size(), 64); i++)
         {
             m_PathBuffer.push_back('\0');
             m_FileNameBuffer.push_back('\0');
@@ -143,6 +143,7 @@ protected:
     std::string                                     m_Title             = "ImGuiApplicationFileSystemBrowserDialogLayer";
     ImGuiApplicationFileSystemPathItem              m_CurrentFolder     = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
     ImGuiApplicationFileSystemPathItem              m_CurrentFile       = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
+    ImGuiApplicationFileSystemPathItem              m_NewFolder         = ImGuiApplicationFileSystemPathItem();
     std::map<std::string, bool>                     m_FormatFilter      = std::map<std::string, bool>();
     std::vector<ImGuiApplicationFileSystemPathItem> m_SelectedPaths     = std::vector<ImGuiApplicationFileSystemPathItem>();
     std::vector<ImGuiApplicationFileSystemPathItem> m_FilesToCopy       = std::vector<ImGuiApplicationFileSystemPathItem>();

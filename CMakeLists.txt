@@ -16,7 +16,9 @@ include(cmake/collect_source_code_and_resources.cmake)
 add_subdirectory("tools/glfw/")
 add_subdirectory("tools/pugixml/")
 
-list(APPEND KERNEL "source/" "tools/glad/")
+list(APPEND KERNEL
+  "source/"
+  "tools/glad/")
 
 set(PATHS "")
 list(APPEND PATHS ${KERNEL})
@@ -43,6 +45,7 @@ add_executable(ImGuiRenderExplore
   tools/iamgui/backends/imgui_impl_opengl3.h
   tools/iamgui/backends/imgui_impl_opengl3.cpp
 
+  #
   ${SOURCES}
   ${HEADERS}
 

@@ -60,26 +60,9 @@ int ImGuiApplication::Execute()
     if(m_MainWindow == nullptr)
         return 0;
 
+    // Awake all the layers
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        (*it)->Start();
-
-    //auto& io = ImGui::GetIO();
-    //auto font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Tahoma.ttf", 24);
-
-    //auto font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Verdana.ttf", 24, NULL, io.Fonts->GetGlyphRangesCyrillic());
-
-    //io.Fonts->Build();
-
-    //io.Fonts->AddCustomRectFontGlyph(io.Fonts->GetGlyphRangesCyrillic());
-
-    //io.Fonts->AddFontFromMemoryTTF(&inter, sizeof inter, 16 * dpi_scale, NULL, io.Fonts->GetGlyphRangesCyrillic());
-
-    //io.GetGlyphRangesCyrillic()
-
-    //ImGui::Text("Hello"); // use the default font (which is the first loaded font)
-    //ImGui::PushFont(font);
-    //ImGui::Text("Hello with another font");
-    //ImGui::PopFont();
+        (*it)->Awake();
 
     // Process main loop
     while (!glfwWindowShouldClose(m_MainWindow))
@@ -88,6 +71,28 @@ int ImGuiApplication::Execute()
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = m_IniFileLocation.c_str();
         io.LogFilename = m_LogFileLocation.c_str();
+
+        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        {
+            // remove closed layer
+            if((*it)->isClosed())
+            {
+                // call on closed callback
+                (*it)->OnClose();
+
+                // remove from rendering queue
+                auto rm = it;
+                it++;
+                m_RenderingQueue.erase(rm);
+
+                // stop if there's nothing to render
+                if(it == m_RenderingQueue.end())
+                    break;
+            }
+
+            // begin render next child layer
+            (*it)->Start();
+        }
 
         // Poll events
         glfwPollEvents();
@@ -106,34 +111,8 @@ int ImGuiApplication::Execute()
         // setup dockspace over the whole viewport
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
-        // render children
-        //ImGui::PushFont(font);
-
         for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        {
-            // remove closed layer
-            if((*it)->isClosed())
-            {
-                auto rm = it;
-                it++;
-                m_RenderingQueue.erase(rm);
-
-                // stop if there's nothing to render
-                if(it == m_RenderingQueue.end())
-                    break;
-            }
-
-            // begin render next child layer
-            (*it)->BeforeUpdate();
-        }
-
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-            (*it)->Render();
-
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-            (*it)->AfterUpdate();
-
-        //ImGui::PopFont();
+            (*it)->Update();
 
         // Render contents
         ImGui::Render();
@@ -163,6 +142,9 @@ int ImGuiApplication::Execute()
         // swap buffers
         glfwSwapBuffers(m_MainWindow);
     }
+
+    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        (*it)->Finish();
 
     return 1;
 }
