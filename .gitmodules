@@ -4,3 +4,6 @@
 [submodule "tools/glfw"]
 	path = tools/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "tools/pugixml"]
+	path = tools/pugixml
+	url = https://github.com/Alexey-cpu/pugixml.git

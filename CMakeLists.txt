@@ -14,8 +14,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(cmake/collect_source_code_and_resources.cmake)
 
 add_subdirectory("tools/glfw/")
+add_subdirectory("tools/pugixml/")
 
-list(APPEND KERNEL "source/" "tools/iconv-lite/" "tools/glad/")
+list(APPEND KERNEL
+  "source/"
+  "tools/glad/")
 
 set(PATHS "")
 list(APPEND PATHS ${KERNEL})
@@ -34,11 +37,6 @@ add_executable(ImGuiRenderExplore
   tools/iamgui/imgui_tables.cpp
   tools/iamgui/imgui_widgets.cpp
 
-  # GLAD
-  #tools/glad/include/glad/glad.h
-  #tools/glad/include/KHR/khrplatform.h
-  #tools/glad/src/glad.c
-
   # ImGUI GLFW backend
   tools/iamgui/backends/imgui_impl_glfw.h
   tools/iamgui/backends/imgui_impl_glfw.cpp
@@ -47,6 +45,7 @@ add_executable(ImGuiRenderExplore
   tools/iamgui/backends/imgui_impl_opengl3.h
   tools/iamgui/backends/imgui_impl_opengl3.cpp
 
+  #
   ${SOURCES}
   ${HEADERS}
 
@@ -63,7 +62,7 @@ target_include_directories(
   "tools/glad/include/")
 
 #target_link_libraries(ImGuiRenderExplore Qt${QT_VERSION_MAJOR}::Core)
-target_link_libraries(ImGuiRenderExplore glfw)
+target_link_libraries(ImGuiRenderExplore glfw pugixml)
 
 include(GNUInstallDirs)
 install(TARGETS ImGuiRenderExplore

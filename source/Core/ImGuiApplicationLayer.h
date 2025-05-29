@@ -11,24 +11,26 @@ class ImGuiApplicationLayer
 public:
 
     // constructors
-    ImGuiApplicationLayer(std::string _Name) :
-        m_Name(_Name){}
+    ImGuiApplicationLayer(std::string _Name);
 
     // virtual destructor
-    virtual ~ImGuiApplicationLayer(){}
+    virtual ~ImGuiApplicationLayer();
 
     // getters
     bool isClosed() const;
-    bool isHidden() const;
     void Close();
-    void Show();
-    void Hide();
-    void Render();
+
+    void Awake();
+    void Start();
+    void Update();
+    void Finish();
 
     // virtual functions to override
-    virtual void Begin();
-    virtual void Update();
-    virtual void End();
+    virtual void OnClose();
+    virtual void OnAwake();
+    virtual void OnStart();
+    virtual void OnUpdate();
+    virtual void OnFinish();
 
     template<typename __type, typename ... __parameters>
     std::shared_ptr<__type> Push(__parameters... _Parameters)
@@ -48,7 +50,6 @@ protected:
     // info
     std::string                                       m_Name           = std::string();
     bool                                              m_Opened         = true;
-    bool                                              m_Shown          = true;
     std::list<std::shared_ptr<ImGuiApplicationLayer>> m_RenderingQueue = std::list<std::shared_ptr<ImGuiApplicationLayer>>();
 };
 
