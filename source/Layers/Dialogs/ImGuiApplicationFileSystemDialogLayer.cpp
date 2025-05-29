@@ -109,8 +109,7 @@ ImGuiApplicationFileSystemDialogLayer::ImGuiApplicationFileSystemDialogLayer(
     const std::filesystem::path&    _RootPath,
     const std::string&              _Title,
     const std::vector<std::string>& _Formats) :
-    ImGuiApplicationDialogLayer(_Title),
-    m_Title(_Title)
+    ImGuiApplicationDialogLayer(_Title)
 {
     // setup current path
     if(std::filesystem::exists(_RootPath))
@@ -198,6 +197,8 @@ void ImGuiApplicationFileSystemDialogLayer::DrawContent()
     }
 
     // file
+    m_NewFolder = m_CurrentFile;
+
     if(!m_NewFolder.m_FileNameBuffer.empty())
     {
         ImGui::PushID("NewFolder");
@@ -558,9 +559,33 @@ void ImGuiApplicationFileSystemDialogLayer::OnCopyFilesOrFoldersAction()
 
 void ImGuiApplicationFileSystemDialogLayer::OnPasteFilesOrFoldersAction()
 {
-    for(auto fileToCopy : m_FilesToCopy)
+    struct FileInfo
     {
-        auto fileInfo = fileToCopy.getFileInfo();
+        std::wstring name      = std::wstring();
+        std::string  extention = std::string();
+    };
+
+    auto getFileInfo = [](std::filesystem::path path, int _DotsCount = 2)->FileInfo
+    {
+        std::string extention = std::string();
+
+        for(int i = 0; i < _DotsCount; i++)
+        {
+            extention = extention.append(path.extension().string());
+            path = path.stem();
+        }
+
+        return
+        {
+            path.filename().wstring(),
+            extention
+
+        };
+    };
+
+    for(auto& fileToCopy : m_FilesToCopy)
+    {
+        auto fileInfo = getFileInfo(fileToCopy.m_Path);
 
         auto source = fileToCopy.m_Path;
 

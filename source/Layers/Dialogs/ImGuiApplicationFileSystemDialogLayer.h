@@ -23,13 +23,6 @@ class ImGuiApplicationFileSystemPathItem
 {
 public:
 
-    struct FileInfo
-    {
-        std::wstring       name      = std::wstring();
-        std::string        extention = std::string();
-        unsigned long long size      = 0;
-    };
-
     // constructor
     ImGuiApplicationFileSystemPathItem(std::filesystem::path _Path = std::filesystem::path()) : m_Path(_Path)
     {
@@ -58,37 +51,6 @@ public:
     {
         return std::filesystem::is_directory(m_Path);
     }
-
-    FileInfo getFileInfo(int _DotsCount = 2)
-    {
-        std::filesystem::path path      = m_Path;
-        std::string           extention = std::string();
-
-        for(int i = 0; i < _DotsCount; i++)
-        {
-            extention = extention.append(path.extension().string());
-            path = path.stem();
-        }
-
-        try
-        {
-            return
-            {
-                path.filename(),
-                extention,
-                std::filesystem::file_size(path)
-
-            };
-        }
-        catch(...)
-        {
-            return
-            {
-                path.filename(),
-                extention
-            };
-        }
-    };
 
     // info
     std::filesystem::path m_Path;
@@ -140,7 +102,6 @@ public:
 protected:
 
     // info
-    std::string                                     m_Title             = "ImGuiApplicationFileSystemBrowserDialogLayer";
     ImGuiApplicationFileSystemPathItem              m_CurrentFolder     = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
     ImGuiApplicationFileSystemPathItem              m_CurrentFile       = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
     ImGuiApplicationFileSystemPathItem              m_NewFolder         = ImGuiApplicationFileSystemPathItem();
