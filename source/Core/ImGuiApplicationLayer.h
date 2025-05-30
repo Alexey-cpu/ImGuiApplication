@@ -45,6 +45,18 @@ public:
         return layer;
     }
 
+    template<typename __type>
+    bool Contains()
+    {
+        return std::find_if(
+                   m_RenderingQueue.begin(),
+                   m_RenderingQueue.end(),
+                   [](std::shared_ptr<ImGuiApplicationLayer> _Layer)->bool
+                   {
+                       return std::dynamic_pointer_cast<__type>(_Layer) != nullptr;
+                   }) != m_RenderingQueue.end();
+    }
+
 protected:
 
     // info

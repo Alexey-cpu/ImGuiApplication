@@ -18,49 +18,6 @@
 // pugixml
 #include <pugixml.hpp>
 
-/*
-// ImGuiApplicationFileSystemPathItem
-class ImGuiApplicationFileSystemPathItem
-{
-public:
-
-    // constructor
-    ImGuiApplicationFileSystemPathItem(std::filesystem::path _Path = std::filesystem::path()) : m_Path(_Path)
-    {
-        // setup bufferes content
-        m_PathBuffer     = pugi::as_utf8(_Path.wstring());
-        m_FileNameBuffer = pugi::as_utf8(_Path.filename().wstring());
-
-        // add empty symbols here
-        for(size_t i = 0; i < 4 * std::max<size_t>(_Path.wstring().size(), 64); i++)
-        {
-            m_PathBuffer.push_back('\0');
-            m_FileNameBuffer.push_back('\0');
-        }
-    }
-
-    // destryctor
-    ~ImGuiApplicationFileSystemPathItem(){}
-
-    // operators override
-    bool operator == (ImGuiApplicationFileSystemPathItem _Other)
-    {
-        return m_Path == _Other.m_Path;
-    }
-
-    bool isDirectory() const
-    {
-        return std::filesystem::is_directory(m_Path);
-    }
-
-    // info
-    std::filesystem::path m_Path;
-    std::string           m_PathBuffer;
-    std::string           m_FileNameBuffer;
-    bool                  m_Selected = false;
-};
-*/
-
 // ImGuiApplicationFileSystemPathsRenamerDialogLayer
 class ImGuiApplicationFileSystemPathsRenamerDialogLayer : public ImGuiApplicationDialogLayer
 {
@@ -80,7 +37,19 @@ public:
 
 protected:
 
-    std::vector<std::filesystem::path> m_Items;
+    struct Path
+    {
+        Path(std::filesystem::path _Path, std::string _Filename) :
+            path(_Path),
+            filename(_Filename){}
+
+        std::filesystem::path path;
+        std::string           filename;
+    };
+
+    typedef std::vector<Path> Paths;
+
+    Paths m_Paths;
 };
 
 // ImGuiApplicationFileSystemDialogLayer
@@ -108,17 +77,19 @@ protected:
     std::string                        m_NewFolder         = std::string();
     std::map<std::string, bool>        m_FormatFilter      = std::map<std::string, bool>();
     std::vector<std::filesystem::path> m_SelectedPaths     = std::vector<std::filesystem::path>();
-    std::vector<std::filesystem::path> m_FilesToCopy       = std::vector<std::filesystem::path>();
+    std::vector<std::filesystem::path> m_ReadyToCopyPaths  = std::vector<std::filesystem::path>();
     std::stack<std::filesystem::path>  m_VisitedPathsStack = std::stack<std::filesystem::path>();
 
     // service methods
     void ChangeCurrentPath(std::filesystem::path _Path);
     void SetupFormatFilter(const std::vector<std::string>& _Formats = std::vector<std::string>());
     void DrawContextMenu();
+    void DrawFormatFilter();
+    void HandleKeyInputs();
 
     // callbacks
-    void OnGoUpperAction();
-    void OnGoDeeperAction();
+    void OnLevelUpAction();
+    void OnLevelDownAction();
     void OnCreateFolderAction();
     void OnRemoveFilesOrFoldersAction();
     void OnRenameFilesOrFoldersAction();
