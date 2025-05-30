@@ -539,14 +539,16 @@ void ImGuiApplicationFileSystemDialogLayer::DrawPathsTree(std::filesystem::path 
                 if(!directory.is_directory())
                     continue;
 
-                if(ImGui::TreeNodeEx(pugi::as_utf8(directory.path().filename().wstring()).c_str(), flags))
+                bool opened = ImGui::TreeNodeEx(pugi::as_utf8(directory.path().filename().wstring()).c_str(), flags);
+
+                if(ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+                    ChangeCurrentPath(directory.path());
+
+                if(opened)
                 {
                     DrawPathsTree(directory.path(), false);
                     ImGui::TreePop();
                 }
-
-                if(ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
-                    ChangeCurrentPath(directory.path());
             }
         }
         catch(...)
@@ -556,16 +558,20 @@ void ImGuiApplicationFileSystemDialogLayer::DrawPathsTree(std::filesystem::path 
 
     if(_IsRoot)
     {
+        ImGui::SetNextItemOpen(true);
+
         if(ImGui::BeginChild("TreeViewChildNode", ImVec2(), ImGuiChildFlags_::ImGuiChildFlags_None))
         {
-            if(ImGui::TreeNodeEx(pugi::as_utf8(_Path.wstring()).c_str(), flags))
+            bool opened = ImGui::TreeNodeEx(pugi::as_utf8(_Path.wstring()).c_str(), flags);
+
+            if(ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+                ChangeCurrentPath(_Path);
+
+            if(opened)
             {
                 drawChildFolders(_Path);
                 ImGui::TreePop();
             }
-
-            if(ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
-                ChangeCurrentPath(_Path);
 
             ImGui::EndChild();
         }
