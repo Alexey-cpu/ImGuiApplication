@@ -80,7 +80,7 @@ int main(int, char**)
         "FileDialog",
         std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
 
-    //(void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>("ImGuiDemoLayer");
+    (void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>();
 
     (void)ImGuiApplication::Instance()->Push<ImGuiApplicationStyleSettingsLayer>(
         std::filesystem::path(std::filesystem::current_path().parent_path().parent_path().string().append("/shared/")).make_preferred());

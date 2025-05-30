@@ -18,6 +18,7 @@
 // pugixml
 #include <pugixml.hpp>
 
+/*
 // ImGuiApplicationFileSystemPathItem
 class ImGuiApplicationFileSystemPathItem
 {
@@ -58,6 +59,7 @@ public:
     std::string           m_FileNameBuffer;
     bool                  m_Selected = false;
 };
+*/
 
 // ImGuiApplicationFileSystemPathsRenamerDialogLayer
 class ImGuiApplicationFileSystemPathsRenamerDialogLayer : public ImGuiApplicationDialogLayer
@@ -66,8 +68,8 @@ public:
 
     // constructors
     ImGuiApplicationFileSystemPathsRenamerDialogLayer(
-        const std::vector<ImGuiApplicationFileSystemPathItem>& _Items =
-        std::vector<ImGuiApplicationFileSystemPathItem>());
+        const std::vector<std::filesystem::path>& _Items =
+        std::vector<std::filesystem::path>());
 
     // destructor
     virtual ~ImGuiApplicationFileSystemPathsRenamerDialogLayer();
@@ -78,7 +80,7 @@ public:
 
 protected:
 
-    std::vector<ImGuiApplicationFileSystemPathItem> m_Items;
+    std::vector<std::filesystem::path> m_Items;
 };
 
 // ImGuiApplicationFileSystemDialogLayer
@@ -102,13 +104,12 @@ public:
 protected:
 
     // info
-    ImGuiApplicationFileSystemPathItem              m_CurrentFolder     = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
-    ImGuiApplicationFileSystemPathItem              m_CurrentFile       = ImGuiApplicationFileSystemPathItem(std::filesystem::current_path().string());
-    ImGuiApplicationFileSystemPathItem              m_NewFolder         = ImGuiApplicationFileSystemPathItem();
-    std::map<std::string, bool>                     m_FormatFilter      = std::map<std::string, bool>();
-    std::vector<ImGuiApplicationFileSystemPathItem> m_SelectedPaths     = std::vector<ImGuiApplicationFileSystemPathItem>();
-    std::vector<ImGuiApplicationFileSystemPathItem> m_FilesToCopy       = std::vector<ImGuiApplicationFileSystemPathItem>();
-    std::stack<std::filesystem::path>               m_VisitedPathsStack = std::stack<std::filesystem::path>();
+    std::string                        m_CurrentFolder     = std::string();
+    std::string                        m_NewFolder         = std::string();
+    std::map<std::string, bool>        m_FormatFilter      = std::map<std::string, bool>();
+    std::vector<std::filesystem::path> m_SelectedPaths     = std::vector<std::filesystem::path>();
+    std::vector<std::filesystem::path> m_FilesToCopy       = std::vector<std::filesystem::path>();
+    std::stack<std::filesystem::path>  m_VisitedPathsStack = std::stack<std::filesystem::path>();
 
     // service methods
     void ChangeCurrentPath(std::filesystem::path _Path);
