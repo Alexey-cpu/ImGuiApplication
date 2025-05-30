@@ -28,11 +28,14 @@ void ImGuiApplicationDialogLayer::OnUpdate()
     // press button
     ImGui::OpenPopup(m_Name.c_str());
 
+    auto wiondowFlags =
+        ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar;
+
     // start pop-up
     if(ImGui::BeginPopupModal(
             m_Name.c_str(),
             &m_Opened,
-            ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar))
+            wiondowFlags))
     {
         // draw stacked modals
         for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
@@ -42,7 +45,7 @@ void ImGuiApplicationDialogLayer::OnUpdate()
             "Content",
             ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - (ImGui::CalcTextSize("Button").y + style.FramePadding.x * 2.0f + m_ButtonsSpacing * 2.0f)),
             ImGuiChildFlags_::ImGuiChildFlags_Borders,
-            ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar);
+            wiondowFlags);
 
         DrawContent();
 
@@ -52,7 +55,7 @@ void ImGuiApplicationDialogLayer::OnUpdate()
             "Buttons",
             ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y),
             ImGuiChildFlags_::ImGuiChildFlags_Borders,
-            ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar);
+            wiondowFlags);
 
         DrawButtons();
 

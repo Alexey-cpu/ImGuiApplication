@@ -81,10 +81,15 @@ protected:
     std::stack<std::filesystem::path>  m_VisitedPathsStack = std::stack<std::filesystem::path>();
 
     // service methods
-    void ChangeCurrentPath(std::filesystem::path _Path);
+    bool ChangeCurrentPath(std::filesystem::path _Path);
     void SetupFormatFilter(const std::vector<std::string>& _Formats = std::vector<std::string>());
     void DrawContextMenu();
     void DrawFormatFilter();
+
+    void DrawBrowser();
+    void DrawPathsTree(std::filesystem::path, const bool& = true);
+
+
     void HandleKeyInputs();
 
     // callbacks

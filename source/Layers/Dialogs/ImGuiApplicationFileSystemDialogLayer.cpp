@@ -1,6 +1,7 @@
 #include <ImGuiApplicationFileSystemDialogLayer.h>
 
-#include <set>;
+#include <set>
+#include <iostream>
 
 // ImGuiApplicationFileSystemPathsRenamerDialogLayer
 ImGuiApplicationFileSystemPathsRenamerDialogLayer::ImGuiApplicationFileSystemPathsRenamerDialogLayer(
@@ -134,194 +135,29 @@ ImGuiApplicationFileSystemDialogLayer::~ImGuiApplicationFileSystemDialogLayer(){
 
 void ImGuiApplicationFileSystemDialogLayer::DrawContent()
 {
-    // <--
-    ImGui::SameLine();
-    if(ImGui::Button("<--"))
-        OnLevelUpAction();
+    auto windowFlags =
+        ImGuiWindowFlags_::ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar;
 
-    // -->
-    ImGui::SameLine();
-    if(ImGui::Button("-->"))
-        OnLevelDownAction();
-
-    // mkdir
-    ImGui::SameLine();
-    if(ImGui::Button("mkdir"))
-        OnCreateFolderAction();
-
-    ImGui::SetItemTooltip("Create folder");
-
-    // rmdir
-    ImGui::SameLine();
-    if(ImGui::Button("rmdir"))
-        OnRemoveFilesOrFoldersAction();
-
-    ImGui::SetItemTooltip("Remove file/folder");
-
-    // mv
-    ImGui::SameLine();
-    if(ImGui::Button("mv"))
-        OnRenameFilesOrFoldersAction();
-
-    ImGui::SetItemTooltip("Rename selected files/folders");
-
-    // cp
-    ImGui::SameLine();
-    if(ImGui::Button("cp"))
-        OnCopyFilesOrFoldersAction();
-
-    ImGui::SetItemTooltip("Copy selected files/folders");
-
-    // paste
-    ImGui::SameLine();
-    if(ImGui::Button("paste"))
-        OnPasteFilesOrFoldersAction();
-
-    ImGui::SetItemTooltip("Paste copied files/folders");
-
-    // pwd
-    m_CurrentFolder = pugi::as_utf8(std::filesystem::current_path().wstring());
-    m_CurrentFolder.push_back('\0');
-
-    if(!m_CurrentFolder.empty())
+    if(ImGui::BeginTable(
+            "FileSystemDialogSplitter",
+            2,
+            ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable))
     {
-        ImGui::PushID("CurrentDirectory");
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::TableSetupColumn("Tree", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_::ImGuiTableColumnFlags_PreferSortAscending);
+        ImGui::TableSetupColumn("Browser", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_::ImGuiTableColumnFlags_PreferSortAscending);
+        //ImGui::TableHeadersRow();
 
-        if(ImGui::InputText(
-                std::string("").c_str(),
-                &m_CurrentFolder[0],
-                m_CurrentFolder.size(),
-                ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_::ImGuiInputTextFlags_ElideLeft))
-        {
-            m_VisitedPathsStack.push(std::filesystem::current_path());
-            ChangeCurrentPath(std::filesystem::path(m_CurrentFolder));
-        }
+        ImGui::TableNextRow();
 
-        ImGui::PopID();
-    }
+        // configure 'Name' column
+        ImGui::TableSetColumnIndex(0);
+       DrawPathsTree(std::filesystem::current_path().root_path());
 
-    // file
-    if(m_NewFolder.empty())
-        m_NewFolder = pugi::as_utf8(std::filesystem::current_path().filename().wstring());
-    m_NewFolder.push_back('\0');
-
-    ImGui::PushID("NewFolder");
-    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputText(
-        std::string("").c_str(),
-        &m_NewFolder[0],
-        m_NewFolder.size(),
-        ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_::ImGuiInputTextFlags_ElideLeft);
-    ImGui::PopID();
-
-    // draw table
-    if (ImGui::BeginTable(
-            "CurrentDirectoryContents",
-            3,
-            ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable,
-            ImVec2(0.0, ImGui::GetContentRegionAvail().y - 4.0 * ImGui::GetTextLineHeightWithSpacing())))
-    {
-        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_::ImGuiTableColumnFlags_PreferSortAscending);
-        ImGui::TableSetupColumn("Last write time", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_::ImGuiTableColumnFlags_PreferSortAscending);
-        ImGui::TableHeadersRow();
-
-        // draw paths in alphabetical order
-        std::set<std::filesystem::path> paths;
-
-        for(const auto& directory :
-             std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred()))
-        {
-            // apply a format filter
-            auto iterator = m_FormatFilter.find(directory.path().extension().string());
-
-            if(!directory.is_directory() &&
-                (iterator == m_FormatFilter.end() || !iterator->second))
-                continue;
-
-            paths.insert(directory.path());
-        }
-
-        for(const auto& path : paths)
-        {
-            // apply a format filter
-            auto iterator = m_FormatFilter.find(path.extension().string());
-
-            if(!std::filesystem::is_directory(path) &&
-                (iterator == m_FormatFilter.end() || !iterator->second))
-                continue;
-
-            ImGui::TableNextRow();
-
-            // configure 'Name' column
-            ImGui::TableSetColumnIndex(0);
-            ImGui::TextUnformatted(pugi::as_utf8(path.filename().wstring()).c_str());
-
-            // configure 'Last write time' column
-            ImGui::TableSetColumnIndex(1);
-
-            try
-            {
-                auto time    = std::filesystem::last_write_time(path);
-                auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time.time_since_epoch()).count();
-                ImGui::TextUnformatted(asctime(std::localtime(&seconds)));
-            }
-            catch(...)
-            {
-            }
-
-            // configure 'Type' column
-            bool isDirectory = std::filesystem::is_directory(path);
-
-            ImGui::TableSetColumnIndex(2);
-            ImGui::PushID(pugi::as_utf8(path.wstring()).c_str());
-            ImGui::PushStyleColor(
-                ImGuiCol_::ImGuiCol_Text,
-                isDirectory? IM_COL32(128, 128, 128, 255) : IM_COL32(255, 255, 255, 255));
-
-            if(ImGui::Selectable(
-                    (isDirectory ? "Directory" : "File"),
-                    std::find(m_SelectedPaths.begin(), m_SelectedPaths.end(), path) != m_SelectedPaths.end(),
-                    ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowDoubleClick   |
-                        ImGuiSelectableFlags_::ImGuiSelectableFlags_SpanAllColumns |
-                        ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowOverlap))
-            {
-                if(isDirectory)
-                {
-                    if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) || ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Enter))
-                        ChangeCurrentPath(path);
-                }
-
-                if(ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl))
-                {
-                    m_SelectedPaths.push_back(path);
-                }
-                else
-                {
-                    m_SelectedPaths.clear();
-                    m_SelectedPaths.push_back(path);
-                }
-
-                DrawContextMenu();
-
-                // update new folder name
-                m_NewFolder = pugi::as_utf8(path.filename().wstring());
-            }
-
-            ImGui::PopStyleColor();
-
-            DrawContextMenu();
-
-            ImGui::SetItemTooltip("Select and then right click onto an item to call context popup menu");
-
-            ImGui::PopID();
-        }
+        // configure 'Last write time' column
+        ImGui::TableSetColumnIndex(1);
+        DrawBrowser();
 
         ImGui::EndTable();
-
-        HandleKeyInputs();
-        DrawFormatFilter();
     }
 }
 
@@ -350,19 +186,28 @@ void ImGuiApplicationFileSystemDialogLayer::DrawButtons()
     }
 }
 
-void ImGuiApplicationFileSystemDialogLayer::ChangeCurrentPath(std::filesystem::path _Path)
+bool ImGuiApplicationFileSystemDialogLayer::ChangeCurrentPath(std::filesystem::path _Path)
 {
     if(!std::filesystem::exists(_Path))
-        return;
+        return false;
 
     // change current path
-    std::filesystem::current_path(_Path);
+    try
+    {
+        std::filesystem::current_path(_Path);
+    }
+    catch(...)
+    {
+        return false;
+    }
 
     // clear selection
     m_SelectedPaths.clear();
 
     // setup format filter
     SetupFormatFilter();
+
+    return true;
 }
 
 void ImGuiApplicationFileSystemDialogLayer::SetupFormatFilter(const std::vector<std::string>& _Formats)
@@ -376,7 +221,7 @@ void ImGuiApplicationFileSystemDialogLayer::SetupFormatFilter(const std::vector<
 
     // fill format filter by current directory
     for(const auto& directoryEntry :
-         std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred()))
+         std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred(), std::filesystem::directory_options::skip_permission_denied))
     {
         auto extention = directoryEntry.path().extension().string();
 
@@ -477,6 +322,260 @@ void ImGuiApplicationFileSystemDialogLayer::DrawFormatFilter()
     }
 }
 
+void ImGuiApplicationFileSystemDialogLayer::DrawBrowser()
+{
+    // <--
+    if(ImGui::Button("<--"))
+        OnLevelUpAction();
+
+    // -->
+    ImGui::SameLine();
+    if(ImGui::Button("-->"))
+        OnLevelDownAction();
+
+    // mkdir
+    ImGui::SameLine();
+    if(ImGui::Button("mkdir"))
+        OnCreateFolderAction();
+
+    ImGui::SetItemTooltip("Create folder");
+
+    // rmdir
+    ImGui::SameLine();
+    if(ImGui::Button("rmdir"))
+        OnRemoveFilesOrFoldersAction();
+
+    ImGui::SetItemTooltip("Remove file/folder");
+
+    // mv
+    ImGui::SameLine();
+    if(ImGui::Button("mv"))
+        OnRenameFilesOrFoldersAction();
+
+    ImGui::SetItemTooltip("Rename selected files/folders");
+
+    // cp
+    ImGui::SameLine();
+    if(ImGui::Button("cp"))
+        OnCopyFilesOrFoldersAction();
+
+    ImGui::SetItemTooltip("Copy selected files/folders");
+
+    // paste
+    ImGui::SameLine();
+    if(ImGui::Button("paste"))
+        OnPasteFilesOrFoldersAction();
+
+    ImGui::SetItemTooltip("Paste copied files/folders");
+
+    // pwd
+    m_CurrentFolder = pugi::as_utf8(std::filesystem::current_path().wstring());
+    size_t size = m_CurrentFolder.size();
+    for(size_t i = 0; i < std::max<size_t>(size, 512); i++)
+        m_CurrentFolder.push_back('\0');
+
+    if(!m_CurrentFolder.empty())
+    {
+        ImGui::PushID("CurrentDirectory");
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+
+        if(ImGui::InputText(
+                std::string("").c_str(),
+                &m_CurrentFolder[0],
+                m_CurrentFolder.size(),
+                ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_::ImGuiInputTextFlags_ElideLeft))
+        {
+            m_VisitedPathsStack.push(std::filesystem::current_path());
+            ChangeCurrentPath(std::filesystem::path(m_CurrentFolder));
+        }
+
+        ImGui::PopID();
+    }
+
+    // file
+    if(m_NewFolder.empty())
+        m_NewFolder = pugi::as_utf8(std::filesystem::current_path().filename().wstring());
+    m_NewFolder.push_back('\0');
+
+    ImGui::PushID("NewFolder");
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    ImGui::InputText(
+        std::string("").c_str(),
+        &m_NewFolder[0],
+        m_NewFolder.size(),
+        ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_::ImGuiInputTextFlags_ElideLeft);
+    ImGui::PopID();
+
+    // draw table
+    if (ImGui::BeginTable(
+            "CurrentDirectoryContents",
+            3,
+            ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable,
+            ImVec2(0.0, ImGui::GetContentRegionAvail().y - 4.0 * ImGui::GetTextLineHeightWithSpacing())))
+    {
+        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_::ImGuiTableColumnFlags_PreferSortAscending);
+        ImGui::TableSetupColumn("Last write time", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_::ImGuiTableColumnFlags_PreferSortAscending);
+        ImGui::TableHeadersRow();
+
+        // draw paths in alphabetical order
+        try
+        {
+        }
+        catch(...)
+        {
+
+        }
+
+        std::set<std::filesystem::path> paths;
+
+        for(const auto& directory :
+             std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred(), std::filesystem::directory_options::skip_permission_denied))
+        {
+            // apply a format filter
+            auto iterator = m_FormatFilter.find(directory.path().extension().string());
+
+            if(!directory.is_directory() &&
+                (iterator == m_FormatFilter.end() || !iterator->second))
+                continue;
+
+            paths.insert(directory.path());
+        }
+
+        for(const auto& path : paths)
+        {
+            // apply a format filter
+            auto iterator = m_FormatFilter.find(path.extension().string());
+
+            if(!std::filesystem::is_directory(path) &&
+                (iterator == m_FormatFilter.end() || !iterator->second))
+                continue;
+
+            ImGui::TableNextRow();
+
+            // configure 'Name' column
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextUnformatted(pugi::as_utf8(path.filename().wstring()).c_str());
+
+            // configure 'Last write time' column
+            ImGui::TableSetColumnIndex(1);
+
+            try
+            {
+                auto time    = std::filesystem::last_write_time(path);
+                auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time.time_since_epoch()).count();
+                ImGui::TextUnformatted(asctime(std::localtime(&seconds)));
+            }
+            catch(...)
+            {
+            }
+
+            // configure 'Type' column
+            bool isDirectory = std::filesystem::is_directory(path);
+
+            ImGui::TableSetColumnIndex(2);
+            ImGui::PushID(pugi::as_utf8(path.wstring()).c_str());
+            ImGui::PushStyleColor(
+                ImGuiCol_::ImGuiCol_Text,
+                isDirectory? IM_COL32(128, 128, 128, 255) : IM_COL32(255, 255, 255, 255));
+
+            if(ImGui::Selectable(
+                    (isDirectory ? "Directory" : "File"),
+                    std::find(m_SelectedPaths.begin(), m_SelectedPaths.end(), path) != m_SelectedPaths.end(),
+                    ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowDoubleClick   |
+                        ImGuiSelectableFlags_::ImGuiSelectableFlags_SpanAllColumns |
+                        ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowOverlap))
+            {
+                if(isDirectory)
+                {
+                    if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) || ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Enter))
+                        ChangeCurrentPath(path);
+                }
+
+                if(ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl))
+                {
+                    m_SelectedPaths.push_back(path);
+                }
+                else
+                {
+                    m_SelectedPaths.clear();
+                    m_SelectedPaths.push_back(path);
+                }
+
+                DrawContextMenu();
+
+                // update new folder name
+                m_NewFolder = pugi::as_utf8(path.filename().wstring());
+            }
+
+            ImGui::PopStyleColor();
+
+            DrawContextMenu();
+
+            ImGui::SetItemTooltip("Select and then right click onto an item to call context popup menu");
+
+            ImGui::PopID();
+        }
+
+        ImGui::EndTable();
+
+        HandleKeyInputs();
+        DrawFormatFilter();
+    }
+}
+
+void ImGuiApplicationFileSystemDialogLayer::DrawPathsTree(std::filesystem::path _Path, const bool& _IsRoot)
+{
+    ImGuiTreeNodeFlags flags =
+        ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DrawLinesFull | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+
+    auto drawChildFolders = [this, &flags](std::filesystem::path _Path)
+    {
+        try
+        {
+            for(const auto& directory :
+                 std::filesystem::directory_iterator(_Path.make_preferred(), std::filesystem::directory_options::skip_permission_denied))
+            {
+                if(!directory.is_directory())
+                    continue;
+
+                if(ImGui::TreeNodeEx(pugi::as_utf8(directory.path().filename().wstring()).c_str(), flags))
+                {
+                    DrawPathsTree(directory.path(), false);
+                    ImGui::TreePop();
+                }
+
+                if(ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+                    ChangeCurrentPath(directory.path());
+            }
+        }
+        catch(...)
+        {
+        }
+    };
+
+    if(_IsRoot)
+    {
+        if(ImGui::BeginChild("TreeViewChildNode", ImVec2(), ImGuiChildFlags_::ImGuiChildFlags_None))
+        {
+            if(ImGui::TreeNodeEx(pugi::as_utf8(_Path.wstring()).c_str(), flags))
+            {
+                drawChildFolders(_Path);
+                ImGui::TreePop();
+            }
+
+            if(ImGui::IsItemClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+                ChangeCurrentPath(_Path);
+
+            ImGui::EndChild();
+        }
+    }
+    else
+    {
+        drawChildFolders(_Path);
+    }
+};
+
 void ImGuiApplicationFileSystemDialogLayer::HandleKeyInputs()
 {
     if(Contains<ImGuiApplicationFileSystemPathsRenamerDialogLayer>())
@@ -493,7 +592,7 @@ void ImGuiApplicationFileSystemDialogLayer::HandleKeyInputs()
         m_SelectedPaths.clear();
 
         for(const auto& directory :
-             std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred()))
+             std::filesystem::directory_iterator(std::filesystem::current_path().make_preferred(), std::filesystem::directory_options::skip_permission_denied))
         {
             // apply a format filter
             auto iterator = m_FormatFilter.find(directory.path().extension().string());
