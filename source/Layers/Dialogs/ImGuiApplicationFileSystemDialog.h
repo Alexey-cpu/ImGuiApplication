@@ -54,14 +54,16 @@ namespace ImGuiApplication::Dialogs
     {
     public:
 
-        // constructors
         FileSystemDialog(
             const std::filesystem::path&    _RootPath = std::filesystem::current_path(),
             const std::string&              _Title    = "ImGuiApplicationFileSystemBrowserDialogLayer",
             const std::vector<std::string>& _Formats  = std::vector<std::string>());
 
-        // destructor
         virtual ~FileSystemDialog();
+
+        std::string GetFolderName() const;
+        std::string GetFileName() const;
+        std::vector<std::filesystem::path> GetSelectedPaths() const;
 
         // ImGuiApplicationDialogLayer
         virtual void DrawContent() override;

@@ -135,6 +135,29 @@ FileSystemDialog::FileSystemDialog(
 
 FileSystemDialog::~FileSystemDialog(){}
 
+std::string FileSystemDialog::GetFolderName() const
+{
+    std::string folderName;
+
+    for(auto symbol : m_CurrentFolder)
+    {
+        if(symbol != '\0')
+            folderName.push_back(symbol);
+    }
+
+    return folderName;
+}
+
+std::string FileSystemDialog::GetFileName() const
+{
+    return m_NewFolder;
+}
+
+std::vector<std::filesystem::path> FileSystemDialog::GetSelectedPaths() const
+{
+    return m_SelectedPaths;
+}
+
 void FileSystemDialog::DrawContent()
 {
     auto windowFlags =

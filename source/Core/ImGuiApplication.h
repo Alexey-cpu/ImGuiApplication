@@ -45,6 +45,7 @@ namespace ImGuiApplication
         // API
         Application* Maximize();
         int Execute();
+        int Reload();
 
         // virtual functions to override
         virtual void OnClose() override;

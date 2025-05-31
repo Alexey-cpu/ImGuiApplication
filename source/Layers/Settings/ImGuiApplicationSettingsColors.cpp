@@ -6,11 +6,20 @@ Colors::Colors() : Layer("Colors"){}
 
 Colors::~Colors(){}
 
-void Colors::OnClose(){}
+void Colors::OnClose()
+{
+    Layer::OnClose();
+}
 
-void Colors::OnAwake(){}
+void Colors::OnAwake()
+{
+    Layer::OnAwake();
+}
 
-void Colors::OnStart(){}
+void Colors::OnStart()
+{
+    Layer::OnStart();
+}
 
 void Colors::OnUpdate()
 {
@@ -77,7 +86,10 @@ void Colors::OnUpdate()
     ImGui::EndChild();
 }
 
-void Colors::OnFinish(){}
+void Colors::OnFinish()
+{
+    Layer::OnFinish();
+}
 
 pugi::xml_node Colors::Serialize(pugi::xml_node& _Parent)
 {

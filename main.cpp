@@ -94,7 +94,7 @@ int main(int, char**)
         std::list<std::shared_ptr<ImGuiApplication::Layer>>(
             {
                 std::shared_ptr<ImGuiApplication::Settings::Fonts>(new ImGuiApplication::Settings::Fonts()),
-                std::shared_ptr<ImGuiApplication::Settings::Colors>(new ImGuiApplication::Settings::Colors())
+                std::shared_ptr<ImGuiApplication::Settings::Colors>(new ImGuiApplication::Settings::Colors()),
             }
         )
     );

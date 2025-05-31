@@ -4,6 +4,7 @@
 // Custom
 #include <ImGuiApplication.h>
 #include <ImGuiApplicationSerializable.h>
+#include <ImGuiApplicationFileSystemDialog.h>
 
 // imgui
 #include <imgui.h>
@@ -16,7 +17,7 @@ namespace ImGuiApplication::Settings
     public:
 
         Fonts(const std::filesystem::path& _Path =
-              std::filesystem::path(std::filesystem::current_path().append("/fonts")));
+              std::filesystem::path(std::filesystem::current_path().wstring().append(L"/fonts")));
         virtual ~Fonts();
 
         virtual void OnClose() override;
@@ -24,6 +25,7 @@ namespace ImGuiApplication::Settings
         virtual void OnStart() override;
         virtual void OnUpdate() override;
         virtual void OnFinish() override;
+
         virtual pugi::xml_node Serialize(pugi::xml_node& _Parent) override;
         virtual bool Deserialize(pugi::xml_node& _Node) override;
 
@@ -33,6 +35,9 @@ namespace ImGuiApplication::Settings
         int                   m_DefaultFontSize = 18.0;
         int                   m_FontSize        = m_DefaultFontSize;
         std::string           m_FontName        = std::string();
+        std::string           m_FontsDirectory  = std::string();
+
+        std::shared_ptr<ImGuiApplication::Dialogs::FileSystemDialog> m_FileSystemDialog = nullptr;
     };
 }
 

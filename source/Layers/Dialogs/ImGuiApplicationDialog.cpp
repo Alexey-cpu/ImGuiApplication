@@ -39,9 +39,8 @@ void Dialog::OnUpdate()
             &m_Opened,
             wiondowFlags))
     {
-        // draw stacked modals
-        for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-            (*it)->Update();
+        // call base implementation
+        Layer::OnUpdate();
 
         ImGui::BeginChild(
             "Content",

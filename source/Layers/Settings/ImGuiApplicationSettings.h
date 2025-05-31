@@ -38,6 +38,9 @@ namespace ImGuiApplication
 
             std::filesystem::path  m_Path;
             std::shared_ptr<Layer> m_CurrentLayer = nullptr;
+
+            // service methods
+            void Save();
         };
     }
 };

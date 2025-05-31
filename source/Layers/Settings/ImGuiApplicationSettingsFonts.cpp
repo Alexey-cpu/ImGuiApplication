@@ -1,13 +1,19 @@
+#include <ImGuiApplication.h>
 #include <ImGuiApplicationSettingsFonts.h>
+#include <ImGuiApplicationFileSystemDialog.h>
 
 using namespace ImGuiApplication::Settings;
+using namespace ImGuiApplication::Dialogs;
 
 Fonts::Fonts(const std::filesystem::path& _Path) :
     Layer("Fonts"), m_Path(_Path){}
 
 Fonts::~Fonts(){}
 
-void Fonts::OnClose(){}
+void Fonts::OnClose()
+{
+    Layer::OnClose();
+}
 
 void Fonts::OnAwake()
 {
@@ -16,10 +22,11 @@ void Fonts::OnAwake()
 
     // retrive ImGui IO
     auto& io = ImGui::GetIO();
+    io.Fonts->Clear();
 
     // recursivelly scan path for .ttf fonts
     for(const auto& directory :
-         std::filesystem::recursive_directory_iterator(m_Path))
+         std::filesystem::recursive_directory_iterator(m_Path, std::filesystem::directory_options::skip_permission_denied))
     {
         if(directory.is_directory() ||
             directory.path().extension() != ".ttf")
@@ -27,17 +34,39 @@ void Fonts::OnAwake()
 
         io.Fonts->AddFontFromFileTTF(
             pugi::as_utf8(directory.path().wstring()).c_str(),
-            m_DefaultFontSize * 4.0 / 3.0,
-            NULL,
+            m_DefaultFontSize * (4.0 / 3.0),
+            nullptr,
             io.Fonts->GetGlyphRangesCyrillic());
     }
 
     // build fonts
     io.Fonts->Build();
+
+    // reload app
+    ImGuiApplication::Application::Instance()->Reload();
 }
 
 void Fonts::OnStart()
 {
+    // check file system dialog state
+    if(m_FileSystemDialog != nullptr &&
+        m_FileSystemDialog->isClosed() &&
+        m_FileSystemDialog->isAccepted())
+    {
+        std::filesystem::path path = std::filesystem::path(m_FileSystemDialog->GetFolderName());
+
+        if(std::filesystem::exists(path))
+        {
+            // change current path
+            m_Path = path;
+
+            // try to load fonts
+            OnAwake();
+        }
+
+        m_FileSystemDialog = nullptr;
+    }
+
     // apply state
     auto& io = ImGui::GetIO();
     ImFontAtlas* atlas = io.Fonts;
@@ -53,8 +82,15 @@ void Fonts::OnStart()
 
 void Fonts::OnUpdate()
 {
+    // customize
     auto& io = ImGui::GetIO();
     ImFontAtlas* atlas = io.Fonts;
+
+    if(ImGui::Button("Browse"))
+        m_FileSystemDialog = ImGuiApplication::Application::Instance()->Push<FileSystemDialog>();
+
+    ImGui::SameLine();
+    ImGui::TextUnformatted(pugi::as_utf8(m_Path.wstring()).c_str());
 
     ImGui::TextUnformatted(m_FontName.c_str());
     ImGui::SameLine();
@@ -179,7 +215,8 @@ pugi::xml_node Fonts::Serialize(pugi::xml_node& _Parent)
 
 bool Fonts::Deserialize(pugi::xml_node& _Node)
 {
-    pugi::xml_node fonts = std::string(_Node.name()) == "Fonts" ? _Node : _Node.child("Fonts");
+    pugi::xml_node fonts =
+        std::string(_Node.name()) == "Fonts" ? _Node : _Node.child("Fonts");
 
     if(fonts.empty())
         return false;

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <Settings>
 	<Fonts>
-		<Size>18</Size>
+		<Size>23</Size>
 		<Name>Default</Name>
-		<Path>C:/fonts</Path>
+		<Path>C:\SDK\Qt_Projects\ImGuiRenderExplore\shared</Path>
 	</Fonts>
 </Settings>

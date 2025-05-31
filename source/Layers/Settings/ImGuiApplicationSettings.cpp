@@ -19,13 +19,28 @@ Settings::~Settings(){}
 
 void Settings::OnClose()
 {
-    //pugi::xml_document document;
-    //Serialize(document);
-    //document.save_file(m_Path.wstring().c_str());
+    Save();
 }
 
 void Settings::OnAwake()
 {
+    // look for .xml settings file
+    for(const auto& directory :
+         std::filesystem::recursive_directory_iterator(m_Path, std::filesystem::directory_options::skip_permission_denied))
+    {
+        if(directory.is_directory())
+            continue;
+
+        if(directory.path().extension() == ".xml" &&
+            pugi::as_utf8(directory.path().filename().stem().wstring()) == "Settings")
+        {
+            std::cout << "Settings::OnAwake() " << directory.path().string() << "\n";
+
+            pugi::xml_document document;
+            document.load_file(pugi::as_utf8(directory.path().wstring()).c_str());
+            Deserialize(document);
+        }
+    }
 }
 
 void Settings::OnUpdate()
@@ -46,7 +61,6 @@ void Settings::OnUpdate()
 
         ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_::ImGuiTableColumnFlags_PreferSortAscending);
         ImGui::TableSetupColumn("Content", ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_::ImGuiTableColumnFlags_PreferSortAscending);
-        ImGui::TableHeadersRow();
 
         if(std::find(m_RenderingQueue.begin(), m_RenderingQueue.end(), m_CurrentLayer) == m_RenderingQueue.end())
         {
@@ -54,24 +68,44 @@ void Settings::OnUpdate()
                 m_CurrentLayer = m_RenderingQueue.front();
         }
 
-        // draw name column
-        for(auto& item : m_RenderingQueue)
-        {
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
 
-            if(ImGui::Selectable(
-                    item->getName().c_str(),
-                    m_CurrentLayer == item,
-                    ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowOverlap))
-                m_CurrentLayer = item;
+        if(ImGui::BeginTable(
+                "FileSystemDialogSplitter",
+                1,
+                ImGuiTableFlags_ScrollY          |
+                    ImGuiTableFlags_RowBg        |
+                    ImGuiTableFlags_Resizable    |
+                    ImGuiTableFlags_Reorderable  |
+                    ImGuiTableFlags_Hideable))
+        {
+            for(auto& item : m_RenderingQueue)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+
+                if(ImGui::Selectable(
+                        item->getName().c_str(),
+                        m_CurrentLayer == item,
+                        ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowOverlap))
+                    m_CurrentLayer = item;
+            }
+
+            ImGui::EndTable();
         }
 
         // draw content column
         ImGui::TableSetColumnIndex(1);
 
         if(m_CurrentLayer != nullptr)
+        {
+            ImGui::BeginChild(m_CurrentLayer->getName().c_str(), ImVec2(0.0, 0.0));
+
             m_CurrentLayer->Update();
+
+            ImGui::EndChild();
+        }
 
         ImGui::EndTable();
     }
@@ -81,19 +115,7 @@ void Settings::OnUpdate()
 
 void Settings::OnFinish()
 {
-    if(!std::filesystem::exists(m_Path))
-        return;
-
-    // create filepath
-    std::filesystem::path filepath =
-        std::filesystem::path(m_Path.wstring().append(L"/").append(pugi::as_wide(getName())).append(L".xml")).make_preferred();
-
-    // save settigns
-    pugi::xml_document document;
-    Serialize(document);
-    document.save_file(filepath.c_str());
-
-    std::cout << "Settings::OnFinish() " << filepath << "\n";
+    Save();
 }
 
 pugi::xml_node Settings::Serialize(pugi::xml_node& _Parent)
@@ -123,8 +145,23 @@ bool Settings::Deserialize(pugi::xml_node& _Node)
         auto serializable = std::dynamic_pointer_cast<IXSerializable>(item);
 
         if(serializable != nullptr)
-            serializable->Deserialize(_Node);
+            serializable->Deserialize(settings);
     }
 
     return true;
+}
+
+void Settings::Save()
+{
+    if(!std::filesystem::exists(m_Path))
+        return;
+
+    // create filepath
+    std::filesystem::path filepath =
+        std::filesystem::path(m_Path.wstring().append(L"/").append(pugi::as_wide(getName())).append(L".xml")).make_preferred();
+
+    // save settigns
+    pugi::xml_document document;
+    Serialize(document);
+    document.save_file(filepath.c_str());
 }

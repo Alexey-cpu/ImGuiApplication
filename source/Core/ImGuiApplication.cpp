@@ -117,6 +117,13 @@ int ImGuiApplication::Application::Execute()
     return 1;
 }
 
+int ImGuiApplication::Application::Reload()
+{
+    ImGui_ImplOpenGL3_DestroyDeviceObjects();
+    ImGui_ImplOpenGL3_CreateDeviceObjects();
+    return 1;
+}
+
 void ImGuiApplication::Application::OnClose(){}
 
 void ImGuiApplication::Application::OnAwake()
