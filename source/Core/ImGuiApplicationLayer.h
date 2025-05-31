@@ -6,51 +6,54 @@
 #include <list>
 
 // ImGuiApplicationLayer
-class ImGuiApplicationLayer
+namespace ImGuiApplication
 {
-public:
-
-    // constructors
-    ImGuiApplicationLayer(std::string _Name);
-
-    // virtual destructor
-    virtual ~ImGuiApplicationLayer();
-
-    // getters
-    bool isClosed() const;
-    void Close();
-
-    void Awake();
-    void Start();
-    void Update();
-    void Finish();
-
-    // virtual functions to override
-    virtual void OnClose();
-    virtual void OnAwake();
-    virtual void OnStart();
-    virtual void OnUpdate();
-    virtual void OnFinish();
-
-    template<typename __type, typename ... __parameters>
-    std::shared_ptr<__type> Push(__parameters... _Parameters)
+    class Layer
     {
-        // create layer
-        auto layer = std::make_shared<__type>(_Parameters ...);
+    public:
+        Layer(const std::string& _Name);
+        virtual ~Layer();
 
-        // push layer into rendering queue
-        m_RenderingQueue.push_back(layer);
+        std::string getName() const;
 
-        // return previously create layer
-        return layer;
-    }
+        bool isClosed() const;
+        void Close();
+        void Awake();
+        void Start();
+        void Update();
+        void Finish();
+        virtual void OnClose();
+        virtual void OnAwake();
+        virtual void OnStart();
+        virtual void OnUpdate();
+        virtual void OnFinish();
 
-protected:
+        template<typename __type, typename ... __parameters>
+        std::shared_ptr<__type> Push(__parameters... _Parameters)
+        {
+            auto layer = std::make_shared<__type>(_Parameters ...);
+            m_RenderingQueue.push_back(layer);
+            return layer;
+        }
 
-    // info
-    std::string                                       m_Name           = std::string();
-    bool                                              m_Opened         = true;
-    std::list<std::shared_ptr<ImGuiApplicationLayer>> m_RenderingQueue = std::list<std::shared_ptr<ImGuiApplicationLayer>>();
+        template<typename __type>
+        bool Contains()
+        {
+            return std::find_if(
+                       m_RenderingQueue.begin(),
+                       m_RenderingQueue.end(),
+                       [](std::shared_ptr<Layer> _Layer)->bool
+                       {
+                           return std::dynamic_pointer_cast<__type>(_Layer) != nullptr;
+                       }) != m_RenderingQueue.end();
+        }
+
+    protected:
+
+        std::string                       m_Name           = std::string();
+        bool                              m_Opened         = true;
+        std::list<std::shared_ptr<Layer>> m_RenderingQueue = std::list<std::shared_ptr<Layer>>();
+    };
 };
 
 #endif // IMGUIAPPLICATIONLAYER_H

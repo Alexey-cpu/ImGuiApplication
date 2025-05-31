@@ -1,55 +1,66 @@
 #include <ImGuiApplicationLayer.h>
 #include <ImGuiApplication.h>
 
-ImGuiApplicationLayer::ImGuiApplicationLayer(std::string _Name) :
+using namespace ImGuiApplication;
+
+Layer::Layer(const std::string& _Name) :
     m_Name(_Name){}
 
-ImGuiApplicationLayer::~ImGuiApplicationLayer(){}
+Layer::~Layer(){}
 
-bool ImGuiApplicationLayer::isClosed() const
+std::string Layer::getName() const
+{
+    return m_Name;
+}
+
+bool Layer::isClosed() const
 {
     return !m_Opened;
 }
 
-void ImGuiApplicationLayer::Close()
+void Layer::Close()
 {
     m_Opened = false;
 }
 
-void ImGuiApplicationLayer::Awake()
+void Layer::Awake()
 {
     OnAwake();
 }
 
-void ImGuiApplicationLayer::Start()
+void Layer::Start()
 {
     OnStart();
 }
 
-void ImGuiApplicationLayer::Update()
+void Layer::Update()
 {
     OnUpdate();
 }
 
-void ImGuiApplicationLayer::Finish()
+void Layer::Finish()
 {
     OnFinish();
 }
 
-void ImGuiApplicationLayer::OnClose()
+void Layer::OnClose()
 {
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
         (*it)->OnClose();
 }
 
-void ImGuiApplicationLayer::OnAwake(){}
+void Layer::OnAwake()
+{
+    for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
+        (*it)->Awake();
+}
 
-void ImGuiApplicationLayer::OnStart()
+void Layer::OnStart()
 {
     // draw stacked modals
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
     {
-        // remove closed layer
+        // remove closed Layer
         if((*it)->isClosed())
         {
             auto rm = it;
@@ -61,19 +72,19 @@ void ImGuiApplicationLayer::OnStart()
                 break;
         }
 
-        // begin render next child layer
+        // begin render next child Layer
         (*it)->OnStart();
     }
 }
 
-void ImGuiApplicationLayer::OnUpdate()
+void Layer::OnUpdate()
 {
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
         (*it)->Update();
 }
 
-void ImGuiApplicationLayer::OnFinish()
+void Layer::OnFinish()
 {
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
-        (*it)->OnFinish();
+        (*it)->Finish();
 }

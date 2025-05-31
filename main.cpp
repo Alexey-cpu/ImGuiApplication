@@ -1,19 +1,21 @@
 #include <ImGuiApplication.h>
-#include <ImGuiApplicationFileSystemDialogLayer.h>
-#include <ImGuiApplicationFileSystemWatcher.h>
-#include <ImGuiApplicationDialogLayer.h>
-#include <ImGuiApplicationStyleSettingsLayer.h>
+#include <ImGuiApplicationFileSystemDialog.h>
+#include <ImGuiApplicationSettingsFonts.h>
+#include <ImGuiApplicationSettingsColors.h>
+#include <ImGuiApplicationDialog.h>
+#include <ImGuiApplicationSettings.h>
 
 #include <filesystem>
+#include <iostream>
 
 // ImGuiDemoLayer
-class ImGuiDemoLayer : public ImGuiApplicationLayer
+class ImGuiDemoLayer : public ImGuiApplication::Layer
 {
 public:
 
     // constructors
     ImGuiDemoLayer() :
-        ImGuiApplicationLayer("ImGuiDemoLayer"){}
+        Layer("ImGuiDemoLayer"){}
 
     // virtual destructor
     virtual ~ImGuiDemoLayer(){}
@@ -75,17 +77,32 @@ int main(int, char**)
     std::setlocale(LC_NUMERIC,"C");
 #endif
 
-    ImGuiApplication::Instance()->Push<ImGuiApplicationFileSystemDialogLayer>(
-        std::filesystem::current_path(),
-        "FileDialog",
-        std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
+    //ImGuiApplication::Application::Instance()->Push<ImGuiApplication::Dialogs::FileSystemDialog>(
+    //    std::filesystem::current_path(),
+    //    "FileDialog",
+    //    std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
 
-    //(void)ImGuiApplication::Instance()->Push<ImGuiDemoLayer>("ImGuiDemoLayer");
+    //(void)ImGuiApplication::Application::Instance()->Push<ImGuiDemoLayer>();
 
-    (void)ImGuiApplication::Instance()->Push<ImGuiApplicationStyleSettingsLayer>(
-        std::filesystem::path(std::filesystem::current_path().parent_path().parent_path().string().append("/shared/")).make_preferred());
+    std::cout << std::filesystem::path(std::filesystem::current_path()) << "\n";
+    std::cout << std::filesystem::path(std::filesystem::current_path().parent_path().wstring().append(L"/shared")).make_preferred() << "\n";
 
-    return ImGuiApplication::Instance()->
+    (void)ImGuiApplication::Application::Instance()->
+        Push<ImGuiApplication::Settings::Settings>(
+        "Settings",
+        std::filesystem::path(std::filesystem::current_path().parent_path().parent_path().wstring().append(L"/shared")).make_preferred(),
+        std::list<std::shared_ptr<ImGuiApplication::Layer>>(
+            {
+                std::shared_ptr<ImGuiApplication::Settings::Fonts>(new ImGuiApplication::Settings::Fonts()),
+                std::shared_ptr<ImGuiApplication::Settings::Colors>(new ImGuiApplication::Settings::Colors()),
+            }
+        )
+    );
+
+    //(void)ImGuiApplication::Application::Instance()->Push<ImGuiApplicationStyleSettingsLayer>(
+    //    std::filesystem::path(std::filesystem::current_path().parent_path().parent_path().string().append("/shared/")).make_preferred());
+
+    return ImGuiApplication::Application::Instance()->
         setTitle("ImGuiApplication")->
         setIniFileLocation(std::filesystem::current_path())->
         setLogFileLocation(std::filesystem::current_path())->

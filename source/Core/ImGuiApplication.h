@@ -18,60 +18,64 @@
 #include <string>
 #include <filesystem>
 
-// ImGuiApplication
-class ImGuiApplication : public ImGuiApplicationLayer
+namespace ImGuiApplication
 {
-public:
-
-    static ImGuiApplication* Instance()
+    // Application
+    class Application : public Layer
     {
-        static ImGuiApplication instance;
-        return &instance;
-    }
+    public:
 
-    ImGuiApplication(const ImGuiApplication &) = delete;
-    ImGuiApplication & operator = (const ImGuiApplication &) = delete;
+        static Application* Instance()
+        {
+            static Application instance;
+            return &instance;
+        }
 
-    // setters
-    ImGuiApplication* setTitle(std::string _Title);
-    ImGuiApplication* setSize(ImVec2 _Size);
-    ImGuiApplication* setBackgroundColor(ImVec4 _BackgroundColor);
-    ImGuiApplication* setConfigFlags(ImGuiConfigFlags _ConfigFlags);
-    ImGuiApplication* setIniFileLocation(std::filesystem::path _Path);
-    ImGuiApplication* setLogFileLocation(std::filesystem::path _Path);
+        Application(const Application &) = delete;
+        Application & operator = (const Application &) = delete;
 
-    // API
-    ImGuiApplication* Maximize();
-    int Execute();
+        // setters
+        Application* setTitle(std::string _Title);
+        Application* setSize(ImVec2 _Size);
+        Application* setBackgroundColor(ImVec4 _BackgroundColor);
+        Application* setConfigFlags(ImGuiConfigFlags _ConfigFlags);
+        Application* setIniFileLocation(std::filesystem::path _Path);
+        Application* setLogFileLocation(std::filesystem::path _Path);
 
-    // virtual functions to override
-    virtual void OnClose() override;
-    virtual void OnAwake() override;
-    virtual void OnStart() override;
-    virtual void OnUpdate() override;
-    virtual void OnFinish() override;
+        // API
+        Application* Maximize();
+        int Execute();
+        int Reload();
 
-private:
+        // virtual functions to override
+        virtual void OnClose() override;
+        virtual void OnAwake() override;
+        virtual void OnStart() override;
+        virtual void OnUpdate() override;
+        virtual void OnFinish() override;
 
-    // info
-    GLFWwindow*      m_MainWindow                = nullptr;
-    std::string      m_MainWindowTitle           = "ImGuiApplication";
-    ImVec2           m_MainWindowSize            = ImVec2(1280, 720);
-    ImVec4           m_MainWindowBackgroundColor = ImVec4(0.0, 0.0, 0.0, 0.0);
-    ImGuiConfigFlags m_MainWindowConfigFlags     =
-        ImGuiConfigFlags_::ImGuiConfigFlags_NavEnableKeyboard |
-        ImGuiConfigFlags_::ImGuiConfigFlags_NavEnableGamepad  |
-        ImGuiConfigFlags_::ImGuiConfigFlags_DockingEnable     |
-        ImGuiConfigFlags_::ImGuiConfigFlags_ViewportsEnable;
+    private:
 
-    std::string m_IniFileLocation = std::filesystem::current_path().string();
-    std::string m_LogFileLocation = std::filesystem::current_path().string();
+        // info
+        GLFWwindow*      m_MainWindow                = nullptr;
+        std::string      m_MainWindowTitle           = "ImGuiApplication";
+        ImVec2           m_MainWindowSize            = ImVec2(1280, 720);
+        ImVec4           m_MainWindowBackgroundColor = ImVec4(0.0, 0.0, 0.0, 0.0);
+        ImGuiConfigFlags m_MainWindowConfigFlags     =
+            ImGuiConfigFlags_::ImGuiConfigFlags_NavEnableKeyboard |
+            ImGuiConfigFlags_::ImGuiConfigFlags_NavEnableGamepad  |
+            ImGuiConfigFlags_::ImGuiConfigFlags_DockingEnable     |
+            ImGuiConfigFlags_::ImGuiConfigFlags_ViewportsEnable;
 
-    // constructors
-    ImGuiApplication();
+        std::string m_IniFileLocation = std::filesystem::current_path().string();
+        std::string m_LogFileLocation = std::filesystem::current_path().string();
 
-    // destructor
-    ~ImGuiApplication();
+        // constructors
+        Application();
+
+        // destructor
+        ~Application();
+    };
 };
 
 #endif // IMGUIAPPLICATION_H
