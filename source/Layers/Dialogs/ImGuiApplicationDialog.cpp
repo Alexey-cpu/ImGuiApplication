@@ -1,27 +1,29 @@
-#include <ImGuiApplicationDialogLayer.h>
+#include <ImGuiApplicationDialog.h>
+
+using namespace ImGuiApplication::Dialogs;
 
 // constructor
-ImGuiApplicationDialogLayer::ImGuiApplicationDialogLayer(std::string _Title) :
-    ImGuiApplicationLayer(_Title){}
+Dialog::Dialog(std::string _Title) :
+    Layer(_Title){}
 
-ImGuiApplicationDialogLayer::~ImGuiApplicationDialogLayer(){}
+Dialog::~Dialog(){}
 
-bool ImGuiApplicationDialogLayer::isAccepted() const
+bool Dialog::isAccepted() const
 {
-    return m_DialogState == ImGuiApplicationDialogState::Accepted;
+    return m_DialogState == State::Accepted;
 }
 
-bool ImGuiApplicationDialogLayer::isCanceled() const
+bool Dialog::isCanceled() const
 {
-    return m_DialogState == ImGuiApplicationDialogState::Canceled;
+    return m_DialogState == State::Canceled;
 }
 
-bool ImGuiApplicationDialogLayer::isUndefined() const
+bool Dialog::isUndefined() const
 {
-    return m_DialogState == ImGuiApplicationDialogState::Undefined;
+    return m_DialogState == State::Undefined;
 }
 
-void ImGuiApplicationDialogLayer::OnUpdate()
+void Dialog::OnUpdate()
 {
     ImGuiStyle& style = ImGui::GetStyle();
 

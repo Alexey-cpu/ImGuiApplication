@@ -9,44 +9,44 @@ static void glfwErrorCallback(int _Error, const char* _Eescription)
     fprintf(stderr, "GLFW Error %d: %s\n", _Error, _Eescription);
 }
 
-// ImGuiApplication
-ImGuiApplication* ImGuiApplication::setTitle(std::string _Title)
+// Application
+ImGuiApplication::Application* ImGuiApplication::Application::setTitle(std::string _Title)
 {
     m_MainWindowTitle = _Title;
     return Instance();
 }
 
-ImGuiApplication* ImGuiApplication::setSize(ImVec2 _Size)
+ImGuiApplication::Application* ImGuiApplication::Application::setSize(ImVec2 _Size)
 {
     m_MainWindowSize = _Size;
     return Instance();
 }
 
-ImGuiApplication* ImGuiApplication::setBackgroundColor(ImVec4 _BackgroundColor)
+ImGuiApplication::Application* ImGuiApplication::Application::setBackgroundColor(ImVec4 _BackgroundColor)
 {
     m_MainWindowBackgroundColor = _BackgroundColor;
     return Instance();
 }
 
-ImGuiApplication* ImGuiApplication::setConfigFlags(ImGuiConfigFlags _ConfigFlags)
+ImGuiApplication::Application* ImGuiApplication::Application::setConfigFlags(ImGuiConfigFlags _ConfigFlags)
 {
     m_MainWindowConfigFlags = _ConfigFlags;
     return Instance();
 }
 
-ImGuiApplication* ImGuiApplication::setIniFileLocation(std::filesystem::path _Path)
+ImGuiApplication::Application* ImGuiApplication::Application::setIniFileLocation(std::filesystem::path _Path)
 {
     m_IniFileLocation = std::filesystem::path(_Path.string() + "/" + "imgui.ini").make_preferred().string();
     return Instance();
 }
 
-ImGuiApplication* ImGuiApplication::setLogFileLocation(std::filesystem::path _Path)
+ImGuiApplication::Application* ImGuiApplication::Application::setLogFileLocation(std::filesystem::path _Path)
 {
     m_LogFileLocation = std::filesystem::path(_Path.string() + "/" + "imgui_log.txt").make_preferred().string();
     return Instance();
 }
 
-ImGuiApplication* ImGuiApplication::Maximize()
+ImGuiApplication::Application* ImGuiApplication::Application::Maximize()
 {
     if(Instance()->m_MainWindow != nullptr)
         glfwMaximizeWindow(Instance()->m_MainWindow);
@@ -54,7 +54,7 @@ ImGuiApplication* ImGuiApplication::Maximize()
     return Instance();
 }
 
-int ImGuiApplication::Execute()
+int ImGuiApplication::Application::Execute()
 {
     // Check if the window has been instantiated
     if(m_MainWindow == nullptr)
@@ -117,16 +117,16 @@ int ImGuiApplication::Execute()
     return 1;
 }
 
-void ImGuiApplication::OnClose(){}
+void ImGuiApplication::Application::OnClose(){}
 
-void ImGuiApplication::OnAwake()
+void ImGuiApplication::Application::OnAwake()
 {
     // Awake all the layers
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
         (*it)->Awake();
 }
 
-void ImGuiApplication::OnStart()
+void ImGuiApplication::Application::OnStart()
 {
     // update .ini and .log files locations before starting a rendering frame
     ImGuiIO& io = ImGui::GetIO();
@@ -156,7 +156,7 @@ void ImGuiApplication::OnStart()
     }
 }
 
-void ImGuiApplication::OnUpdate()
+void ImGuiApplication::Application::OnUpdate()
 {
     // setup dockspace over the whole viewport
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
@@ -165,13 +165,13 @@ void ImGuiApplication::OnUpdate()
         (*it)->Update();
 }
 
-void ImGuiApplication::OnFinish()
+void ImGuiApplication::Application::OnFinish()
 {
     for(auto it = m_RenderingQueue.begin(); it != m_RenderingQueue.end(); it++)
         (*it)->Finish();
 }
 
-ImGuiApplication::ImGuiApplication() : ImGuiApplicationLayer("ImGuiApplication")
+ImGuiApplication::Application::Application() : Layer("ImGuiApplication")
 {
     // initialization
     glfwSetErrorCallback(glfwErrorCallback);
@@ -254,7 +254,7 @@ ImGuiApplication::ImGuiApplication() : ImGuiApplicationLayer("ImGuiApplication")
     ImGui_ImplOpenGL3_Init(glsl_version);
 }
 
-ImGuiApplication::~ImGuiApplication()
+ImGuiApplication::Application::~Application()
 {
     // Cleanup GLFW/OpenGL
     ImGui_ImplOpenGL3_Shutdown();
