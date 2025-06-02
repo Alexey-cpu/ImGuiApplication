@@ -24,6 +24,7 @@ set(PATHS "")
 list(APPEND PATHS ${KERNEL})
 cmake_language(CALL COLLECT_SOURCE_CODE_AND_RESOURCES PATHS)
 
+add_compile_definitions(IMGUI_DEFINE_MATH_OPERATORS)
 
 add_executable(ImGuiRenderExplore
 

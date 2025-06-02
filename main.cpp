@@ -4,6 +4,7 @@
 #include <ImGuiApplicationSettingsColors.h>
 #include <ImGuiApplicationDialog.h>
 #include <ImGuiApplicationSettings.h>
+#include <ImGuiApplicationScene2DCanvas.h>
 
 #include <filesystem>
 #include <iostream>
@@ -84,6 +85,9 @@ int main(int, char**)
 
     //(void)ImGuiApplication::Application::Instance()->Push<ImGuiDemoLayer>();
 
+    (void)ImGuiApplication::Application::Instance()->Push<ImGuiApplication::Scene2D::Scene>();
+
+
     std::cout << std::filesystem::path(std::filesystem::current_path()) << "\n";
     std::cout << std::filesystem::path(std::filesystem::current_path().parent_path().wstring().append(L"/shared")).make_preferred() << "\n";
 
@@ -98,9 +102,6 @@ int main(int, char**)
             }
         )
     );
-
-    //(void)ImGuiApplication::Application::Instance()->Push<ImGuiApplicationStyleSettingsLayer>(
-    //    std::filesystem::path(std::filesystem::current_path().parent_path().parent_path().string().append("/shared/")).make_preferred());
 
     return ImGuiApplication::Application::Instance()->
         setTitle("ImGuiApplication")->
