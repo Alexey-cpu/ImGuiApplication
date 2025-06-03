@@ -4,7 +4,7 @@
 // Custom
 #include <ImGuiApplicationLayer.h>
 #include <ImGuiApplicationSerializable.h>
-#include <ImGuiApplicationScene2DCanvasItem.h>
+#include <ImGuiApplicationScene2DCanvasItemHierarchy.h>
 
 // imgui
 # ifndef IMGUI_DEFINE_MATH_OPERATORS
@@ -26,39 +26,10 @@ namespace ImGuiApplication
         public:
 
             Scene() : Layer("Scene2D"){}
+
             virtual ~Scene(){}
 
-            virtual void OnUpdate() override
-            {
-                ImGui::Begin("Canvas2D");
-
-                m_Origin = ImGui::GetCursorScreenPos();
-
-                // ImGui::GetContentRegionAvail().x
-
-                m_Size = ImVec2(
-                    std::max(ImGui::GetContentRegionAvail().x, m_GridSize),
-                    std::max(ImGui::GetContentRegionAvail().y, m_GridSize));
-
-                m_Rect = ImRect(m_Origin, m_Origin + m_Size);
-
-                // get draw list
-                m_DrawList = ImGui::GetWindowDrawList();
-
-                // push clipping rect
-                m_DrawList->PushClipRect(m_Rect.GetTL(), m_Rect.GetBR(), true);
-
-                // draw pipeline
-                CatchMouseButtons();
-                DrawBackground();
-                DrawDebugLine();
-                DrawText();
-
-                // pop clipping rect
-                m_DrawList->PopClipRect();
-
-                ImGui::End();
-            }
+            virtual void OnUpdate() override;
 
             ImVec2 LocalItemPosition(ImVec2 _Position)
             {
@@ -70,8 +41,6 @@ namespace ImGuiApplication
                 return (_Position - m_Origin - m_Offset) / m_Scale;
             };
 
-        protected:
-
             ImVec2      m_Origin   = ImVec2();
             ImVec2      m_Size     = ImVec2();
             ImRect      m_Rect     = ImRect();
@@ -79,6 +48,9 @@ namespace ImGuiApplication
             ImDrawList* m_DrawList = nullptr;
             float       m_GridSize = 32.f;
             float       m_Scale    = 1.f;
+
+            std::list<Hierarchy*> m_ItemsToDraw =
+                std::list<Hierarchy*>();
 
             void DrawBackground()
             {
@@ -176,6 +148,7 @@ namespace ImGuiApplication
                     IM_COL32(0, 255, 0, 255),
                     (std::to_string(mousePosition.x) + " " + std::to_string(mousePosition.y)).c_str());
             }
+
         };
     }
 }

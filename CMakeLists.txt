@@ -8,13 +8,14 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
-#find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 
 include(cmake/collect_source_code_and_resources.cmake)
 
 add_subdirectory("tools/glfw/")
 add_subdirectory("tools/pugixml/")
+add_subdirectory("tools/abseil/")
 
 list(APPEND KERNEL
   "source/"
@@ -63,7 +64,7 @@ target_include_directories(
   "tools/glad/include/")
 
 #target_link_libraries(ImGuiRenderExplore Qt${QT_VERSION_MAJOR}::Core)
-target_link_libraries(ImGuiRenderExplore glfw pugixml)
+target_link_libraries(ImGuiRenderExplore glfw pugixml absl::int128 absl::btree Qt${QT_VERSION_MAJOR}::Core)
 
 include(GNUInstallDirs)
 install(TARGETS ImGuiRenderExplore

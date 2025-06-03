@@ -7,3 +7,6 @@
 [submodule "tools/pugixml"]
 	path = tools/pugixml
 	url = https://github.com/Alexey-cpu/pugixml.git
+[submodule "tools/abseil"]
+	path = tools/abseil
+	url = https://github.com/Alexey-cpu/abseil-cpp.git
