@@ -499,16 +499,11 @@ public:
     // virtual functions override
     virtual std::string to_string();
     virtual void from_string(const std::string& _Value);
-
-    //---------------------------------------------------------------------------------------------------------------------
-    // drawing API
-    //---------------------------------------------------------------------------------------------------------------------
     virtual void set_geometry(const Geometry& _Geometry);
     virtual void draw_start();
     virtual void draw_process();
     virtual void draw_finish();
     void draw();
-    //---------------------------------------------------------------------------------------------------------------------
 
 protected:
 
