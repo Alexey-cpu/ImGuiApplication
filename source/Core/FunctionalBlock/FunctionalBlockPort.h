@@ -55,14 +55,9 @@ public:
     //----------------------------------------------------------------------------------
     // GEOMETRY
     //----------------------------------------------------------------------------------
-    void draw();
-
-    void setGeometry(ImVec2 _Origin, ImVec2 _Size);
-
-    // geometry
-    ImVec2 m_Origin = ImVec2();
-    ImVec2 m_Size   = ImVec2();
-    ImRect m_Rect   = ImRect();
+    virtual void draw_start() override;
+    virtual void draw_process() override;
+    virtual void draw_finish() override;
 
     ImU32 m_Color = IM_COL32(
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),

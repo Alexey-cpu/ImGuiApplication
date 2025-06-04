@@ -604,16 +604,10 @@ public:
     //----------------------------------------------------------------------------------
     // IMGUI
     //----------------------------------------------------------------------------------
-    virtual void catchMouseEvents();
-    virtual void drawContent();
-    void draw();
-
-    void setGeometry(ImVec2 _Origin, ImVec2 _Size);
-
-    // geometry
-    ImVec2 m_Origin = ImVec2();
-    ImVec2 m_Size   = ImVec2();
-    ImRect m_Rect   = ImRect();
+    virtual void set_geometry(const Geometry& _Geometry) override;
+    virtual void draw_start() override;
+    virtual void draw_process() override;
+    virtual void draw_finish() override;
 
     ImU32 m_Color = IM_COL32(
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
@@ -629,7 +623,7 @@ public:
             Release,
             Down,
             Hover
-        } type;
+        } type = Type::None;
 
         ImGuiMouseButton_ button = ImGuiMouseButton_::ImGuiMouseButton_Left;
 

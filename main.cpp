@@ -84,7 +84,7 @@ public:
         // create block
         {
             auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-1");
-            parent->setGeometry(ImVec2(32.f, 32.f), ImVec2(128.f, 128.f));
+            parent->set_geometry(FactoryObjectHierarchy::Geometry(ImVec2(32.f, 32.f), ImVec2(128.f, 128.f)));
 
             // add ports
             for(int i = 0; i < 4; i++)
@@ -97,7 +97,7 @@ public:
         // create block
         {
             auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-2");
-            parent->setGeometry(ImVec2(128.f, 128.f), ImVec2(128.f, 128.f));
+            parent->set_geometry(FactoryObjectHierarchy::Geometry(ImVec2(128.f, 128.f), ImVec2(128.f, 128.f)));
 
             // add ports
             for(int i = 0; i < 4; i++)

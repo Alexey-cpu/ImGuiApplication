@@ -1,6 +1,38 @@
 #include "FactoryObject.h"
 #include "Singleton.h"
 
+// FactoryObjectManager
+class FactoryObjectManager : public FactoryObject
+{
+public:
+
+    // constructors
+    FactoryObjectManager(){}
+
+    // destructors
+    virtual ~FactoryObjectManager(){}
+
+    // public methods
+    UUID4Generator::UUID4 uuid(const std::string& _UUID = std::string())
+    {
+        const std::lock_guard<std::mutex> lock(m_Mutex);
+
+        UUID4Generator::UUID4 uuid = _UUID == std::string() ? m_UUIDGenerator.guid() : UUID4Generator::UUID4(_UUID);
+        FactoryObjectUUIDChecker*veryfier = this->find_component<FactoryObjectUUIDChecker>();
+
+        for(size_t i = 0 ; i < 10 && veryfier != nullptr && !veryfier->check(uuid) ; i++)
+            uuid = m_UUIDGenerator.guid();
+
+        return uuid;
+    }
+
+protected:
+
+    // info
+    UUID4Generator::UUID4Generator m_UUIDGenerator;
+    std::mutex m_Mutex;
+};
+
 // FactoryObjectComponent
 FactoryObjectComponent::FactoryObjectComponent(bool _AllowMultipleInstances) :
     m_AllowMultipleInstances(_AllowMultipleInstances){}
@@ -70,24 +102,6 @@ void FactoryObject::remove_all_components()
     }
 
     this->m_Components.clear();
-}
-
-// FactoryObjectManager
-FactoryObjectManager::FactoryObjectManager(){}
-
-FactoryObjectManager::~FactoryObjectManager(){}
-
-UUID4Generator::UUID4 FactoryObjectManager::uuid(const std::string& _UUID)
-{
-    const std::lock_guard<std::mutex> lock(m_Mutex);
-
-    UUID4Generator::UUID4 uuid = _UUID == std::string() ? m_UUIDGenerator.guid() : UUID4Generator::UUID4(_UUID);
-    FactoryObjectUUIDChecker*veryfier = this->find_component<FactoryObjectUUIDChecker>();
-
-    for(size_t i = 0 ; i < 10 && veryfier != nullptr && !veryfier->check(uuid) ; i++)
-        uuid = m_UUIDGenerator.guid();
-
-    return uuid;
 }
 
 // FactoryObjectHierarchy
@@ -163,6 +177,11 @@ FactoryObjectHierarchy* FactoryObjectHierarchy::get_root_item() const
     return item;
 }
 
+FactoryObjectHierarchy::Geometry FactoryObjectHierarchy::get_geometry() const
+{
+    return m_Geometry;
+}
+
 void FactoryObjectHierarchy::set_name(const std::string& _Name)
 {
     m_Name = _Name;
@@ -191,6 +210,11 @@ void FactoryObjectHierarchy::set_parent(FactoryObjectHierarchy* _Parent)
         _Parent->attach_child(this);
         m_Parent = _Parent;
     }
+}
+
+void FactoryObjectHierarchy::set_geometry(const FactoryObjectHierarchy::Geometry& _Geometry)
+{
+    m_Geometry = _Geometry;
 }
 
 void FactoryObjectHierarchy::enable_recursive_children_access()
@@ -317,6 +341,16 @@ std::string FactoryObjectHierarchy::to_string()
 void FactoryObjectHierarchy::from_string(const std::string& _Value)
 {
     (void)_Value;
+}
+
+void FactoryObjectHierarchy::draw_start(){}
+void FactoryObjectHierarchy::draw_process(){}
+void FactoryObjectHierarchy::draw_finish(){}
+void FactoryObjectHierarchy::draw()
+{
+    draw_start();
+    draw_process();
+    draw_finish();
 }
 
 FactoryObjectHierarchy* FactoryObjectHierarchy::find_child_recursuve(

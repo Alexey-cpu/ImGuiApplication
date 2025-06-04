@@ -167,7 +167,11 @@ pugi::xml_node FunctionalBlockPort::pugi_serialize(pugi::xml_node& _Parent)
     return data;
 }
 
-void FunctionalBlockPort::draw()
+void FunctionalBlockPort::draw_start()
+{
+}
+
+void FunctionalBlockPort::draw_process()
 {
     auto executionEnvironment =
         get_parent_recursive<FunctionalBlockExecutionEnvironment>();
@@ -175,19 +179,20 @@ void FunctionalBlockPort::draw()
     if(executionEnvironment == nullptr)
         return;
 
-    // draw self
-    auto rect = ImRect(executionEnvironment->LocalItemPosition(m_Rect.GetTL()), executionEnvironment->LocalItemPosition(m_Rect.GetBR()));
+    auto geometry = get_geometry();
 
-    executionEnvironment->m_DrawList->AddEllipse(
+    // draw self
+    auto rect = ImRect(
+        executionEnvironment->get_item_scene_position(geometry.get_rect().GetTL()),
+        executionEnvironment->get_item_scene_position(geometry.get_rect().GetBR()));
+
+    ImGui::GetWindowDrawList()->AddEllipse(
         rect.GetTL(),
         rect.GetSize() * 0.5f,
         m_Color
         );
 }
 
-void FunctionalBlockPort::setGeometry(ImVec2 _Origin, ImVec2 _Size)
+void FunctionalBlockPort::draw_finish()
 {
-    m_Origin = _Origin;
-    m_Size   = _Size;
-    m_Rect   = ImRect(m_Origin, m_Origin + m_Size);
 }

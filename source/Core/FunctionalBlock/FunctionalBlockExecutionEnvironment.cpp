@@ -16,6 +16,24 @@ FunctionalBlockExecutionEnvironment::FunctionalBlockExecutionEnvironment(
 
 FunctionalBlockExecutionEnvironment::~FunctionalBlockExecutionEnvironment(){}
 
+ImVec2 FunctionalBlockExecutionEnvironment::get_mouse_scene_position() const
+{
+    auto geometry = get_geometry();
+    return (ImGui::GetIO().MousePos - geometry.get_origin() - geometry.get_offset()) / geometry.get_scale();
+}
+
+ImVec2 FunctionalBlockExecutionEnvironment::get_item_scene_position(ImVec2 _Position) const
+{
+    auto geometry = get_geometry();
+
+    return _Position * geometry.get_scale() + geometry.get_origin() + geometry.get_offset();
+};
+
+float FunctionalBlockExecutionEnvironment::get_grid_size() const
+{
+    return m_GridSize;
+}
+
 pugi::xml_node FunctionalBlockExecutionEnvironment::pugi_serialize(pugi::xml_node& _Parent)
 {
     auto xelement = _Parent.append_child(STRINGIFY(FunctionalBlockExecutionEnvironment));
@@ -86,146 +104,197 @@ bool FunctionalBlockExecutionEnvironment::pugi_deserialize(pugi::xml_node& _Node
 
 #include <QDebug>
 
-void FunctionalBlockExecutionEnvironment::draw()
+void FunctionalBlockExecutionEnvironment::draw_start()
 {
     ImGui::Begin(get_name().c_str());
+    ImGuiIO& io = ImGui::GetIO();
 
-    ImGui::SetCursorScreenPos(ImVec2(0.f, 0.f));
+    // retrieve geometry
+    auto origin = ImGui::GetCursorScreenPos();
+    auto size   = ImVec2(std::max(ImGui::GetContentRegionAvail().x, m_GridSize), std::max(ImGui::GetContentRegionAvail().y, m_GridSize));
+    auto offset = get_geometry().get_offset();
+    auto scale  = get_geometry().get_scale();
 
-    m_Origin = ImGui::GetCursorScreenPos();
+    // draw invisible button to handle mouse and key events
+    ImGui::InvisibleButton("Scene2D", size, ImGuiButtonFlags_MouseButtonMask_);
 
-    m_Size = ImVec2(
-        std::max(ImGui::GetContentRegionAvail().x, m_GridSize),
-        std::max(ImGui::GetContentRegionAvail().y, m_GridSize));
+    // drag
+    if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
+        offset += io.MouseDelta;
 
-    m_Rect = ImRect(m_Origin, m_Origin + m_Size);
+    // zoom
+    if (io.MouseWheel != 0)
+        scale = ImClamp(scale + io.MouseWheel * scale / 16.f, 0.0001f, 100.f);
 
-    // get draw list
-    m_DrawList = ImGui::GetWindowDrawList();
+    // setup geometry
+    set_geometry(Geometry(origin, size, offset, scale));
+}
 
-    m_DrawList->ChannelsSplit(2);
+void FunctionalBlockExecutionEnvironment::draw_process()
+{
+    auto drawList = ImGui::GetWindowDrawList();
+    auto geometry = get_geometry();
+
+    // compute local mouse position
+    auto mousePosition = (ImGui::GetIO().MousePos - geometry.get_origin() - geometry.get_offset()) / geometry.get_scale();
 
     // push clipping rect
-    m_DrawList->PushClipRect(m_Rect.GetTL(), m_Rect.GetBR(), true);
+    drawList->PushClipRect(
+        geometry.get_rect().GetTL(),
+        geometry.get_rect().GetBR(), true);
 
-    // draw children
-    CatchMouseButtons();
-    DrawBackground();
-    DrawText();
+    // draw background
+    drawList->AddRectFilled(
+        geometry.get_rect().GetTL(),
+        geometry.get_rect().GetBR(),
+        IM_COL32(64, 64, 64, 255));
 
-    // draw children and catch their mouse and key events
-    std::vector<FunctionalBlock*> currentSelection;
+    drawList->AddRect(
+        geometry.get_rect().GetTL(),
+        geometry.get_rect().GetBR(),
+        IM_COL32(0, 255, 0, 255));
 
-    // find delta
+    auto offset = geometry.get_offset();
+
+    auto gridSize = m_GridSize * geometry.get_scale();
+
+    for (float x = fmodf(offset.x, gridSize); x < geometry.get_size().x; x += gridSize)
+    {
+        drawList->AddLine(
+            ImVec2(geometry.get_rect().GetTL().x + x, geometry.get_rect().GetTL().y),
+            ImVec2(geometry.get_rect().GetTL().x + x, geometry.get_rect().GetBR().y),
+            IM_COL32(200, 200, 200, 40));
+    }
+
+    for (float y = fmodf(offset.y, gridSize); y < geometry.get_size().y; y += gridSize)
+    {
+        drawList->AddLine(
+            ImVec2(geometry.get_rect().GetTL().x, geometry.get_rect().GetTL().y + y),
+            ImVec2(geometry.get_rect().GetTR().x, geometry.get_rect().GetTL().y + y),
+            IM_COL32(200, 200, 200, 40));
+    }
+
+    // draw cursor
+    drawList->AddText(
+        ImGui::GetIO().MousePos,
+        IM_COL32(0, 255, 0, 255),
+        (std::to_string(mousePosition.x) + " " + std::to_string(mousePosition.y)).c_str());
+
+    // draw items
+    bool clearSelection = false;
+
     apply_function_to_children_recursuve(
-        [this, &currentSelection](FactoryObject* _Object)
+        [this, &mousePosition, &clearSelection](FactoryObject* _Object)
         {
-            FunctionalBlock* focusObject =
+            FunctionalBlock* currentObject =
                 dynamic_cast<FunctionalBlock*>(_Object);
 
-            if(focusObject == nullptr)
+            if(currentObject == nullptr)
                 return;
 
             // catch object mouse events
-            focusObject->draw();
+            currentObject->draw();
 
             // select object
-            if(focusObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Left &&
-                focusObject->m_MouseEvent.type == FunctionalBlock::MouseEvent::Type::Click)
-                currentSelection.push_back(focusObject);
-
-            // move object
-            if(focusObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Left &&
-                focusObject->m_MouseEvent.type == FunctionalBlock::MouseEvent::Type::Down)
+            if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Left &&
+                currentObject->m_MouseEvent.type  == FunctionalBlock::MouseEvent::Type::Click)
             {
-                auto targetPosition = SceneMousePosition() - focusObject->m_Size * m_Scale * 0.5f;
-                auto translation    = focusObject->m_Origin - targetPosition;
-                std::vector<FunctionalBlock*> objectsToMove;
+                m_MouseGrabber = currentObject;
 
-                m_Selection->apply_function_to_children_recursuve(
-                    [this, &translation, &focusObject, &objectsToMove](FactoryObjectHierarchy* _Object)
-                    {
-                        FunctionalBlock* selectedObject =
-                            dynamic_cast<FunctionalBlock*>(_Object);
-
-                        if(selectedObject == nullptr)
-                            return;
-
-                        auto delta = focusObject->m_Origin - selectedObject->m_Origin;
-
-                        if(selectedObject != focusObject &&
-                            sqrtf(delta.x * delta.x + delta.y + delta.y) < m_GridSize)
-                        {
-                            return;
-                        }
-
-                        objectsToMove.push_back(selectedObject);
-
-                        //if(selectedObject != nullptr)
-                        //    selectedObject->setGeometry(selectedObject->m_Origin - translation, selectedObject->m_Size);
-                    }
-                    );
-
-                for(auto objectToMove : objectsToMove)
-                {
-                    if(objectToMove != nullptr)
-                        objectToMove->setGeometry(objectToMove->m_Origin - translation, objectToMove->m_Size);
-                }
+                if(!ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl) && m_MouseGrabber != nullptr)
+                    clearSelection = true;
             }
 
+            if(ImGui::IsKeyReleased(ImGuiKey::ImGuiKey_LeftCtrl) &&
+                ImGui::IsMouseDown(ImGuiMouseButton_::ImGuiMouseButton_Left))
+                clearSelection = true;
+
+            if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Escape))
+                clearSelection = true;
+
+            // move object
+            if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Left &&
+                currentObject->m_MouseEvent.type  == FunctionalBlock::MouseEvent::Type::Down &&
+                m_MouseGrabber == nullptr)
+                m_MouseGrabber = currentObject;
+
             // open context menu
-            if(focusObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Right)
+            if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Right)
             {
             }
         }
-    );
+        );
 
-    // move currently selected objects into a special node
-    for(auto selectedItem : currentSelection)
-        selectedItem->set_parent(m_Selection);
+    // move items and select mouse grabber item
+    if(m_MouseGrabber != nullptr)
+    {
+        // move items
+        auto targetPosition = mousePosition - m_MouseGrabber->get_geometry().get_size() * 0.5f;
+        auto translation    = m_MouseGrabber->get_geometry().get_origin() - targetPosition;
 
-    // clear selection
-    // handle left mouse click
-    if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Escape))
+        m_Selection->apply_function_to_children_recursuve(
+            [this, &translation](FactoryObjectHierarchy* _Object)
+            {
+                FunctionalBlock* selectedObject =
+                    dynamic_cast<FunctionalBlock*>(_Object);
+
+                if(selectedObject == nullptr)
+                    return;
+
+                auto geometry = selectedObject->get_geometry();
+                geometry.set_origin(geometry.get_origin() - translation);
+                selectedObject->set_geometry(geometry);
+            }
+            );
+
+        // select mouse grabber item
+        m_MouseGrabber->set_parent(m_Selection);
+    }
+
+    // clear selected items list
+    if(clearSelection)
     {
         auto children = m_Selection->get_children();
-
         for(auto child : children)
             child->set_parent(get_nodes_root());
     }
 
-    // handle left mouse click
-    if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+    // remove all selected items
+    if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete))
     {
+        auto children = m_Selection->get_children();
+
+        for(auto child : children)
+            delete child;
     }
 
-    // handle right mouse click
-    if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right))
+    // handle mouse events
+    for(size_t button = ImGuiMouseButton_::ImGuiMouseButton_Left;
+         button < ImGuiMouseButton_::ImGuiMouseButton_Middle; button++)
     {
-    }
+        // handle mouse click event
+        if(ImGui::IsMouseClicked(button))
+        {
+            if(m_MouseGrabber == nullptr)
+            {
+                auto children = m_Selection->get_children();
+                for(auto child : children)
+                    child->set_parent(get_nodes_root());
+            }
+        }
 
-    // handle middle mouse click
-    if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Middle))
-    {
-    }
-
-    // handle left mouse release
-    if(ImGui::IsMouseReleased(ImGuiMouseButton_::ImGuiMouseButton_Left))
-    {
-    }
-
-    // handle right mouse release
-    if(ImGui::IsMouseReleased(ImGuiMouseButton_::ImGuiMouseButton_Right))
-    {
-    }
-
-    // handle middle mouse release
-    if(ImGui::IsMouseReleased(ImGuiMouseButton_::ImGuiMouseButton_Middle))
-    {
+        // handle mouse release event
+        if(ImGui::IsMouseReleased(button))
+        {
+            m_MouseGrabber = nullptr;
+        }
     }
 
     // pop clipping rect
-    m_DrawList->PopClipRect();
+    drawList->PopClipRect();
+}
 
+void FunctionalBlockExecutionEnvironment::draw_finish()
+{
     ImGui::End();
 }

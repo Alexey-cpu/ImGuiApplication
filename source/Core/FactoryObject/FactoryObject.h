@@ -5,9 +5,15 @@
 #include "UUID4Generator.h"
 
 // STL includes
-#include <mutex>
 #include <string>
 #include <functional>
+
+// imgui
+# ifndef IMGUI_DEFINE_MATH_OPERATORS
+#     define IMGUI_DEFINE_MATH_OPERATORS
+# endif
+#include <imgui.h>
+#include <imgui_internal.h>
 
 // absl
 #include <absl/container/btree_map.h>
@@ -20,13 +26,9 @@ class FactoryObjectComponent
 {
 public:
 
-    // constructor
     FactoryObjectComponent(bool _AllowMultipleInstances = true);
-
-    // virtual destructor
     virtual ~FactoryObjectComponent();
 
-    // public interface
     bool allow_multiple_instannces();
 
     template< typename __type = FactoryObject >
@@ -52,13 +54,9 @@ class FactoryObject
 {
 public:
 
-    // constructor
     FactoryObject();
-
-    // virtual destructor
     virtual ~FactoryObject();
 
-    // public interface
     void detach_component(FactoryObjectComponent* _Component);
     void remove_component(FactoryObjectComponent* _Component);
     void remove_all_components();
@@ -197,40 +195,98 @@ protected:
     mutable std::vector<FactoryObjectComponent*> m_Components;
 };
 
-// FactoryObjectManager
-class FactoryObjectManager : public FactoryObject
-{
-public:
-
-    // constructors
-    FactoryObjectManager();
-
-    // destructors
-    virtual ~FactoryObjectManager();
-
-    // public methods
-    UUID4Generator::UUID4 uuid(const std::string& _UUID = std::string());
-
-protected:
-
-    // info
-    UUID4Generator::UUID4Generator m_UUIDGenerator;
-    std::mutex m_Mutex;
-};
-
 // FactoryObjectHierarchy
 class FactoryObjectHierarchy : public FactoryObject
 {
 public:
 
-    // constructors
+    class Geometry
+    {
+    public:
+        Geometry(
+            const ImVec2& _Origin = ImVec2(0.f, 0.f),
+            const ImVec2& _Size   = ImVec2(128.f, 128.f),
+            const ImVec2& _Offset = ImVec2(0.f, 0.f),
+            const float&  _Scale  = 1.f) :
+            m_Origin(_Origin),
+            m_Size(_Size),
+            m_Offset(_Offset),
+            m_Scale(_Scale)
+        {
+            set_rect(ImRect(m_Origin, m_Origin + m_Size));
+        }
+
+        ~Geometry(){}
+
+        // getters
+        ImVec2 get_origin() const
+        {
+            return m_Origin;
+        }
+
+        ImVec2 get_size() const
+        {
+            return m_Size;
+        }
+
+        ImVec2 get_offset() const
+        {
+            return m_Offset;
+        }
+
+        ImRect get_rect() const
+        {
+            return m_Rect;
+        }
+
+        float get_scale() const
+        {
+            return m_Scale;
+        }
+
+        // setters
+        void set_origin(const ImVec2& _Origin)
+        {
+            set_rect(ImRect(_Origin, _Origin + get_size()));
+        }
+
+        void set_size(const ImVec2& _Size)
+        {
+            set_rect(ImRect(get_origin(), get_origin() + _Size));
+        }
+
+        void set_offset(const ImVec2& _Offset)
+        {
+            m_Offset = _Offset;
+        }
+
+        void set_rect(const ImRect& _Rect)
+        {
+            m_Rect   = _Rect;
+            m_Origin = m_Rect.GetTL();
+            m_Size   = m_Rect.GetSize();
+        }
+
+        void set_scale(float _Scale)
+        {
+            m_Scale = _Scale;
+        }
+
+    protected:
+
+        ImVec2 m_Origin = ImVec2(0.f, 0.f);
+        ImVec2 m_Size   = ImVec2(128.f, 128.f);
+        ImVec2 m_Offset = ImVec2(0.f, 0.f);
+        ImRect m_Rect   = ImRect(m_Origin, m_Origin + m_Size);
+        float  m_Scale  = 1.f;
+    };
+
     FactoryObjectHierarchy(
         const std::string&      _Name   = std::string(),
         FactoryObjectHierarchy* _Parent = nullptr,
         const std::string&      _UUID   = std::string()
         );
 
-    // virtual destructor
     virtual ~FactoryObjectHierarchy();
 
     // predicates
@@ -244,6 +300,7 @@ public:
     virtual std::string get_name() const;
     uint64_t get_attributes();
     FactoryObjectHierarchy* get_root_item() const;
+    Geometry get_geometry() const;
 
     template<typename __type = FactoryObjectHierarchy>
     __type* get_parent() const
@@ -275,6 +332,7 @@ public:
     virtual void set_name(const std::string& _Name);
     void set_attributes(uint64_t _Attributes);
     void set_parent(FactoryObjectHierarchy* _Parent);
+
     void enable_recursive_children_access();
     void disable_recursive_children_access();
 
@@ -442,6 +500,16 @@ public:
     virtual std::string to_string();
     virtual void from_string(const std::string& _Value);
 
+    //---------------------------------------------------------------------------------------------------------------------
+    // drawing API
+    //---------------------------------------------------------------------------------------------------------------------
+    virtual void set_geometry(const Geometry& _Geometry);
+    virtual void draw_start();
+    virtual void draw_process();
+    virtual void draw_finish();
+    void draw();
+    //---------------------------------------------------------------------------------------------------------------------
+
 protected:
 
     // info
@@ -450,6 +518,7 @@ protected:
     uint64_t                m_Attributes                     = 0;
     FactoryObjectHierarchy* m_Parent                         = nullptr;
     bool                    m_RecursiveChildrenAccessEnabled = true;
+    Geometry                m_Geometry;
 
 private:
 
