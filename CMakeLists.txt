@@ -16,6 +16,7 @@ include(cmake/collect_source_code_and_resources.cmake)
 add_subdirectory("tools/glfw/")
 add_subdirectory("tools/pugixml/")
 add_subdirectory("tools/abseil/")
+add_subdirectory("tools/glm/")
 
 list(APPEND KERNEL
   "source/"
@@ -63,8 +64,13 @@ target_include_directories(
   "tools/iamgui/backends/"
   "tools/glad/include/")
 
-#target_link_libraries(ImGuiRenderExplore Qt${QT_VERSION_MAJOR}::Core)
-target_link_libraries(ImGuiRenderExplore glfw pugixml absl::int128 absl::btree Qt${QT_VERSION_MAJOR}::Core)
+target_link_libraries(ImGuiRenderExplore
+  glfw
+  pugixml
+  absl::int128
+  absl::btree
+  glm::glm
+  Qt${QT_VERSION_MAJOR}::Core)
 
 include(GNUInstallDirs)
 install(TARGETS ImGuiRenderExplore

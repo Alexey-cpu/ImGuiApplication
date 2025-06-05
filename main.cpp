@@ -83,8 +83,9 @@ public:
     {
         // create block
         {
-            auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-1");
-            parent->set_geometry(FactoryObjectHierarchy::Geometry(ImVec2(32.f, 32.f), ImVec2(128.f, 128.f)));
+            auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-1", std::string());
+            parent->set_rect(ImRect(ImVec2(512.f, 512.f), ImVec2(512.f, 512.f) + ImVec2(128.f, 128.f)));
+            //parent->set_geometry(FactoryObjectHierarchy::Geometry(ImVec2(32.f, 32.f), ImVec2(128.f, 128.f)));
 
             // add ports
             for(int i = 0; i < 4; i++)
@@ -96,8 +97,8 @@ public:
 
         // create block
         {
-            auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-2");
-            parent->set_geometry(FactoryObjectHierarchy::Geometry(ImVec2(128.f, 128.f), ImVec2(128.f, 128.f)));
+            auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-2", std::string());
+            parent->set_rect(ImRect(ImVec2(128.f, 128.f), ImVec2(128, 128.f) + ImVec2(128.f, 128.f)));
 
             // add ports
             for(int i = 0; i < 4; i++)
