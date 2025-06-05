@@ -604,47 +604,13 @@ public:
     //----------------------------------------------------------------------------------
     // IMGUI
     //----------------------------------------------------------------------------------
-    //virtual void set_geometry(const Geometry& _Geometry) override;
-    virtual void draw_start(const glm::mat4& _Transform) override;
     virtual void draw_process(const glm::mat4& _Transform) override;
-    virtual void draw_finish(const glm::mat4& _Transform) override;
 
     ImU32 m_Color = IM_COL32(
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
         255);
-
-    //ImRect m_MouseCatcher;
-
-    struct MouseEvent
-    {
-        enum Type
-        {
-            None,
-            Click,
-            Release,
-            Down,
-            Hover
-        } type = Type::None;
-
-        ImGuiMouseButton_ button = ImGuiMouseButton_::ImGuiMouseButton_Left;
-
-    } m_MouseEvent;
-
-    struct KeyEvent
-    {
-        enum Type
-        {
-            None,
-            Click,
-            Release,
-            Down
-        } type;
-
-        ImGuiKey key = ImGuiKey::ImGuiKey_None;
-
-    } m_KeyEvent;
     //----------------------------------------------------------------------------------
 
 protected:

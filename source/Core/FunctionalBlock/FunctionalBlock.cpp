@@ -327,47 +327,11 @@ bool FunctionalBlock::pugi_deserialize(pugi::xml_node& _Node)
 //---------------------------------------------------------------------------------------------------------------------
 // GEOMETRY
 //---------------------------------------------------------------------------------------------------------------------
-#include <QDebug>
-
-void FunctionalBlock::draw_start(const glm::mat4& _Transform){}
 
 void FunctionalBlock::draw_process(const glm::mat4& _Transform)
 {
     ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Blocks);
 
-    // catch mouse events
-    bool hovered = ImRect(
-                       get_rect(true).GetTL() + get_rect().GetSize() * 0.1f,
-                       get_rect(true).GetBR() - get_rect().GetSize() * 0.1f).Contains(ImGui::GetIO().MousePos);
-
-    m_MouseEvent.type = MouseEvent::Type::None;
-
-    if(hovered)
-    {
-        for(size_t button = ImGuiMouseButton_::ImGuiMouseButton_Left;
-             button < ImGuiMouseButton_::ImGuiMouseButton_Middle; button++)
-        {
-            m_MouseEvent.button = (ImGuiMouseButton_)button;
-
-            if(ImGui::IsMouseClicked(button))
-            {
-                m_MouseEvent.type = MouseEvent::Type::Click;
-                break;
-            }
-
-            if(ImGui::IsMouseReleased(button))
-            {
-                m_MouseEvent.type = MouseEvent::Type::Release;
-                break;
-            }
-
-            if(ImGui::IsMouseDown(button))
-            {
-                m_MouseEvent.type = MouseEvent::Type::Down;
-                break;
-            }
-        }
-    }
 
     // draw self
     set_transformation(_Transform);
@@ -378,7 +342,9 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
         m_Color,
         0.f,
         ImDrawFlags_::ImDrawFlags_None,
-        hovered || get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f
+        ImRect(get_rect(true).GetTL() + get_rect().GetSize() * 0.1f,
+               get_rect(true).GetBR() - get_rect().GetSize() * 0.1f).Contains(ImGui::GetIO().MousePos) ||
+                get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f
         );
 
     // draw ports
@@ -436,8 +402,4 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
             }
             );
     }
-}
-
-void FunctionalBlock::draw_finish(const glm::mat4& _Transform)
-{
 }

@@ -89,10 +89,10 @@ public:
 
             // add ports
             for(int i = 0; i < 4; i++)
-                parent->add_input<double>("In-" + std::to_string(i));
+                parent->add_input<double>("In-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
 
             for(int i = 0; i < 2; i++)
-                parent->add_output<double>("O-" + std::to_string(i));
+                parent->add_output<double>("O-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
         }
 
         // create block
@@ -102,35 +102,32 @@ public:
 
             // add ports
             for(int i = 0; i < 4; i++)
-                parent->add_input<double>("In-" + std::to_string(i));
+                parent->add_input<double>("In-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
 
             for(int i = 0; i < 2; i++)
-                parent->add_output<double>("O-" + std::to_string(i));
+                parent->add_output<double>("O-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
         }
-
-        //auto child1 = new FunctionalBlock(parent, "SomeBlock-2");
-        //child1->setGeometry(ImVec2(32.f, 32.f), ImVec2(64, 64.f));
-        //child1->enable_recursive_children_access();
-
-        //auto child2 = new FunctionalBlock(child1, "SomeBlock-3");
-        //child2->setGeometry(ImVec2(32.f, 32.f), ImVec2(32, 32.f));
-        //child2->enable_recursive_children_access();
-
         /*
         ImVec2 init = ImVec2(0.f, 0.f);
 
         int k  = 0;
-        int N  = 1e1;
+        int N  = 1e5;
         int dN = std::max(0.01f * (float)N, 1.f);
 
         for(int i =0; i < N; i++)
         {
-            qDebug() << i;
-
             for(int j = 0; j < dN; j++)
             {
-                (new FunctionalBlock(m_Environment.get(), "SomeBlock-1"))
-                    ->setGeometry(init, ImVec2(128.f, 128.f));
+                auto item = new FunctionalBlock(m_Environment.get(), "SomeBlock-1");
+
+                item->set_rect(ImRect(init, init + ImVec2(128.f, 128.f)));
+
+                // add ports
+                for(int i = 0; i < 4; i++)
+                    item->add_input<double>("In-" + std::to_string(i));
+
+                for(int i = 0; i < 2; i++)
+                    item->add_output<double>("O-" + std::to_string(i));
 
                 init.x = (j + 1) * 256;
 
@@ -142,9 +139,9 @@ public:
 
             k++;
         }
-
-        qDebug() << "m_Environment->count_nodes() " << m_Environment->count_nodes();
         */
+
+        //qDebug() << "m_Environment->count_nodes() " << m_Environment->count_nodes();
     }
 
     // virtual destructor

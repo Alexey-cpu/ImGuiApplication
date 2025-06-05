@@ -27,6 +27,17 @@ public:
         NONE
     };
 
+    enum Orientation
+    {
+        Top,
+        Bottom,
+        Left,
+        Right,
+        Vertical,
+        Horizontal,
+        AllWays
+    };
+
     // constructors
     FunctionalBlockPort(
             Type                    _PortType,
@@ -36,6 +47,17 @@ public:
 
     // virtual destructor
     virtual ~FunctionalBlockPort();
+
+    // getters
+    Orientation get_orientation() const
+    {
+        return m_Orientation;
+    }
+
+    void set_orientation(Orientation _Value)
+    {
+        m_Orientation = _Value;
+    }
 
     // virtual functions
     virtual const std::type_info& get_type_info() const = 0;
@@ -52,9 +74,7 @@ public:
     //----------------------------------------------------------------------------------
     // GEOMETRY
     //----------------------------------------------------------------------------------
-    virtual void draw_start(const glm::mat4& _Transform) override;
     virtual void draw_process(const glm::mat4& _Transform) override;
-    virtual void draw_finish(const glm::mat4& _Transform) override;
 
     ImU32 m_Color = IM_COL32(
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
@@ -65,7 +85,8 @@ public:
 protected:
 
     // info
-    Type m_Type;
+    Type        m_Type;
+    Orientation m_Orientation;
 };
 
 // FunctionalBlockDataPort

@@ -167,33 +167,29 @@ pugi::xml_node FunctionalBlockPort::pugi_serialize(pugi::xml_node& _Parent)
     return data;
 }
 
-void FunctionalBlockPort::draw_start(const glm::mat4& _Transform)
-{
-    // setup draw channel
-    ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Ports);
-}
-
 void FunctionalBlockPort::draw_process(const glm::mat4& _Transform)
 {
+    ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Ports);
+
     set_transformation(_Transform);
 
     // draw self
     auto rect = ImRect(get_rect(true).GetTL(), get_rect(true).GetBR());
-
 
     ImGui::GetWindowDrawList()->AddEllipse(
         rect.GetCenter(),
         rect.GetSize() * 0.5f,
         m_Color,
         0.f,
-        ImGui::GetWindowDrawList()->_CalcCircleAutoSegmentCount(ImMax(rect.GetSize().x, rect.GetSize().y) * 0.5f),
-        rect.Contains(ImGui::GetIO().MousePos) ||
-               get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f);
+        18,
+        rect.Contains(ImGui::GetIO().MousePos) ? 16.f : 4.f);
 
     ImGui::GetWindowDrawList()->AddEllipseFilled(
         rect.GetCenter(),
         rect.GetSize() * 0.5f,
-        m_Color);
+        m_Color,
+        0.f,
+        18);
 
     // draw connection lines
     if(get_port_type() == FunctionalBlockPort::Type::OUTPUT)
@@ -206,13 +202,8 @@ void FunctionalBlockPort::draw_process(const glm::mat4& _Transform)
                 edge->draw();
         }
     }
-}
 
-#include <QDebug>
-
-void FunctionalBlockPort::draw_finish(const glm::mat4& _Transform)
-{
-    // catch mouse event
+    // catch mouse events
     auto executionEnvironment =
         get_parent_recursive<FunctionalBlockExecutionEnvironment>();
 
@@ -223,19 +214,16 @@ void FunctionalBlockPort::draw_finish(const glm::mat4& _Transform)
     if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) &&
         ImGui::IsMouseDown(ImGuiMouseButton_::ImGuiMouseButton_Left))
     {
-        qDebug() << "Setup the source port !!!";
-
         executionEnvironment->m_MouseGrabberPort = this;
     }
-
-    if(ImGui::IsMouseReleased(ImGuiMouseButton_::ImGuiMouseButton_Left) &&
-        executionEnvironment->m_MouseGrabberPort != this &&
-        executionEnvironment->m_MouseGrabberPort != nullptr)
+    else if(ImGui::IsMouseReleased(ImGuiMouseButton_::ImGuiMouseButton_Left) &&
+             executionEnvironment->m_MouseGrabberPort != this &&
+             executionEnvironment->m_MouseGrabberPort != nullptr)
     {
-        qDebug() << "Connecting ports !!!";
+        // create edge
+        executionEnvironment->add_edge(executionEnvironment->m_MouseGrabberPort, this);
 
-        auto edge = executionEnvironment->add_edge(executionEnvironment->m_MouseGrabberPort, this);
-
-        if(edge != nullptr) qDebug() << "Connection succeeded !!!";
+        // reset mouse grabber port
+        executionEnvironment->m_MouseGrabberPort = nullptr;
     }
 }

@@ -57,9 +57,12 @@ public:
         return false;
     }
 
-    virtual void draw_start(const glm::mat4& _Transform) override;
     virtual void draw_process(const glm::mat4& _Transform) override;
-    virtual void draw_finish(const glm::mat4& _Transform) override;
+
+protected:
+
+    bool m_Selected = false;
+    bool m_Focused  = false;
 };
 
 // FunctionalBlockPortsConnectionLineCreator

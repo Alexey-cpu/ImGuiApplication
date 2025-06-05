@@ -580,15 +580,11 @@ public:
     }
 
     // API
-    virtual void draw_start(const glm::mat4& _Transform){}
     virtual void draw_process(const glm::mat4& _Transform){}
-    virtual void draw_finish(const glm::mat4& _Transform){}
 
     void draw(const glm::mat4& _Transform = glm::mat4(1.f))
     {
-        draw_start(_Transform);
         draw_process(_Transform);
-        draw_finish(_Transform);
     }
 
 protected:

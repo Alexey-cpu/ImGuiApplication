@@ -6,8 +6,6 @@
 #include "FunctionalBlockExecutionContext.h"
 #include "DynamicGraph.h"
 
-#include <imgui.h>
-
 // FunctionalBlockExecutionEnvironment
 class FunctionalBlockExecutionEnvironment : public DynamicGraph, public IPugiXMLSerializable, public FactoryObjectRenderer
 {
@@ -39,14 +37,14 @@ public:
 
         if(context == nullptr)
         {
-            this->abort();
+            abort();
             return false;
         }
 
         // preprocessing
         if(!preprocess<__type>())
         {
-            this->abort();
+            abort();
             return false;
         }
 
@@ -55,13 +53,13 @@ public:
         {
             if(!validate_blocks<__type>())
             {
-                this->abort();
+                abort();
                 return false;
             }
         }
 
         // execute blocks
-        std::vector<DynamicGraphNode*> excecutionOrder = this->topological_sort();
+        std::vector<DynamicGraphNode*> excecutionOrder = topological_sort();
 
         for(auto item : excecutionOrder)
         {
@@ -70,14 +68,14 @@ public:
 
             if(object == nullptr)
             {
-                this->abort();
+                abort();
                 return false;
             }
 
             if(!object->process<__type>() &&
                 !context->ignore_processing_fail())
             {
-                this->abort();
+                abort();
                 return false;
             }
         }
@@ -85,7 +83,7 @@ public:
         // postprocessing
         if(!postprocess<__type>())
         {
-            this->abort();
+            abort();
             return false;
         }
 
@@ -138,11 +136,6 @@ public:
                context->postprocess();
     }
 
-    //----------------------------------------------------------------------------------------------------------------------------------------
-    //ImVec2 get_mouse_scene_position() const;
-    //ImVec2 get_item_scene_position(ImVec2 _Position) const;
-    //float get_grid_size() const;
-
     enum DrawChannels
     {
         Main,
@@ -154,18 +147,13 @@ public:
 
     virtual pugi::xml_node pugi_serialize(pugi::xml_node& _Parent) override;
     virtual bool pugi_deserialize(pugi::xml_node& _Node) override;
-
-    virtual void draw_start(const glm::mat4& _Transform) override;
     virtual void draw_process(const glm::mat4& _Transform) override;
-    virtual void draw_finish(const glm::mat4& _Transform) override;
 
-    FunctionalBlockPort*    m_MouseGrabberPort       = nullptr;
-    //----------------------------------------------------------------------------------------------------------------------------------------
-
+    FunctionalBlock*        m_MouseGrabberBlock = nullptr;
+    FunctionalBlockPort*    m_MouseGrabberPort  = nullptr;
 protected:
 
     FactoryObjectHierarchy* m_Selection         = nullptr;
-    FunctionalBlock*        m_MouseGrabberBlock = nullptr;
     float                   m_GridSize          = 32.f;
 
     // service methods

@@ -84,93 +84,59 @@ bool FunctionalBlockExecutionEnvironment::pugi_deserialize(pugi::xml_node& _Node
     return true;
 }
 
-#include <QDebug>
-
-/*
-float FunctionalBlockExecutionEnvironment::get_grid_size() const
-{
-    return m_GridSize;
-}
-
-ImVec2 FunctionalBlockExecutionEnvironment::get_mouse_scene_position() const
-{
-    //auto geometry = get_geometry();
-    return ImVec2();//(ImGui::GetIO().MousePos - geometry.get_origin() - geometry.get_offset()) / geometry.get_scale();
-}
-
-ImVec2 FunctionalBlockExecutionEnvironment::get_item_scene_position(ImVec2 _Position) const
-{
-    return ImVec2();
-
-    //auto geometry = get_geometry();
-
-    //return _Position * geometry.get_scale() + geometry.get_origin() + geometry.get_offset();
-};
-*/
-
-void FunctionalBlockExecutionEnvironment::draw_start(const glm::mat4& _Transform)
-{
-    // retrieve IO
-    ImGuiIO& io = ImGui::GetIO();
-
-    // configure scene
-    ImGui::Begin(get_name().c_str());
-    ImGui::SetCursorScreenPos(ImVec2(0.f, 0.f));
-
-    auto origin = ImGui::GetCursorScreenPos();
-    auto size   = ImVec2(std::max(ImGui::GetContentRegionAvail().x, 64.f), std::max(ImGui::GetContentRegionAvail().y, 64.f));
-
-    ImGui::InvisibleButton(
-        "Scene2D",
-        size,
-        ImGuiButtonFlags_::ImGuiButtonFlags_MouseButtonMask_);
-
-    ImGui::GetWindowDrawList()->ChannelsSplit(FunctionalBlockExecutionEnvironment::DrawChannels::Last);
-    ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Main);
-
-    // compute transformation matrix
-    glm::mat4 transform = get_transform();
-
-    // drag
-    if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
-        transform = glm::translate(transform, glm::vec3(io.MouseDelta.x, io.MouseDelta.y, 0.0f));
-
-    // zoom
-    if (io.MouseWheel != 0)
-    {
-        float scale = std::max(std::max(transform[0][0], transform[1][1]), transform[2][2]);
-        scale = ImClamp(scale + io.MouseWheel * scale / 16.f, 0.0001f, 100.f);
-        transform[0][0] = scale;
-        transform[1][1] = scale;
-        transform[2][2] = scale;
-    }
-
-    // setup geometry and transformation matrix
-    set_rect(ImRect(origin, origin + size));
-    set_transformation(transform);
-}
-
 void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transform)
 {
+    ImGui::Begin(get_name().c_str());
+
+    // retrieve IO
+    ImGuiIO& io   = ImGui::GetIO();
     auto drawList = ImGui::GetWindowDrawList();
 
-    // push clipping rect
-    drawList->PushClipRect(
-        get_rect().GetTL(),
-        get_rect().GetBR(), true);
+    // configure scene
+    {
+        ImGui::SetCursorScreenPos(ImVec2(0.f, 0.f));
 
-    // draw background
-    drawList->AddRectFilled(
-        get_rect().GetTL(),
-        get_rect().GetBR(),
-        IM_COL32(64, 64, 64, 255));
+        auto origin = ImGui::GetCursorScreenPos();
+        auto size   = ImVec2(std::max(ImGui::GetContentRegionAvail().x, 64.f), std::max(ImGui::GetContentRegionAvail().y, 64.f));
 
-    drawList->AddRect(
-        get_rect().GetTL(),
-        get_rect().GetBR(),
-        IM_COL32(0, 255, 0, 255));
+        ImGui::InvisibleButton(
+            "Scene2D",
+            size,
+            ImGuiButtonFlags_::ImGuiButtonFlags_MouseButtonMask_);
 
-    // draw grid
+        ImGui::GetWindowDrawList()->ChannelsSplit(FunctionalBlockExecutionEnvironment::DrawChannels::Last);
+        ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Main);
+
+        // compute transformation matrix
+        glm::mat4 transform = get_transform();
+
+        // drag
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
+            transform = glm::translate(transform, glm::vec3(io.MouseDelta.x, io.MouseDelta.y, 0.0f));
+
+        // zoom
+        if (io.MouseWheel != 0)
+        {
+            float scale = std::max(std::max(transform[0][0], transform[1][1]), transform[2][2]);
+            scale = ImClamp(scale + io.MouseWheel * scale / 16.f, 0.0001f, 100.f);
+            transform[0][0] = scale;
+            transform[1][1] = scale;
+            transform[2][2] = scale;
+        }
+
+        // setup geometry and transformation matrix
+        set_rect(ImRect(origin, origin + size));
+        set_transformation(transform);
+
+        // push clipping rect
+        drawList->PushClipRect(get_rect().GetTL(), get_rect().GetBR(), true);
+
+        // draw background
+        drawList->AddRectFilled(get_rect().GetTL(), get_rect().GetBR(), IM_COL32(64, 64, 64, 255));
+        drawList->AddRect(get_rect().GetTL(), get_rect().GetBR(), IM_COL32(0, 255, 0, 255));
+    }
+
+    // draw grid and mouse tacking cursor
     auto rect      = get_rect();
     auto transform = get_transform();
     auto offset    = ImVec2(transform[3][0], transform[3][1]);
@@ -193,7 +159,7 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
             IM_COL32(200, 200, 200, 40));
     }
 
-    // draw cursor
+    //
     glm::mat4 mouseTransform = glm::mat4(1.f);
     ImVec2    mousePostion   = (ImGui::GetIO().MousePos - offset) / scale;
 
@@ -215,7 +181,7 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
     bool clearSelection = false;
 
     apply_function_to_children_recursuve(
-        [this, &clearSelection](FactoryObject* _Object)
+        [this, &clearSelection, &drawList](FactoryObject* _Object)
         {
             FunctionalBlock* currentObject =
                 dynamic_cast<FunctionalBlock*>(_Object);
@@ -223,17 +189,35 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
             if(currentObject == nullptr)
                 return;
 
-            // catch object mouse events
+            // apply transformation to an item
+            currentObject->set_transformation(get_transform());
+
+            // check if the item is within scene bounding rect
+            if(!get_rect().Contains(currentObject->get_rect(true).GetTL())  &&
+                !get_rect().Contains(currentObject->get_rect(true).GetTR()) &&
+                !get_rect().Contains(currentObject->get_rect(true).GetBL()) &&
+                !get_rect().Contains(currentObject->get_rect(true).GetBR()))
+                return;
+
             currentObject->draw(get_transform());
 
-            // select object
-            if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Left &&
-                currentObject->m_MouseEvent.type  == FunctionalBlock::MouseEvent::Type::Click)
+            // catch object mouse events
+            if(currentObject->get_rect(true).Contains(ImGui::GetIO().MousePos))
             {
-                m_MouseGrabberBlock = currentObject;
+                // select the item
+                if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+                {
+                    m_MouseGrabberBlock = currentObject;
 
-                if(!ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl) && m_MouseGrabberBlock != nullptr)
-                    clearSelection = true;
+                    if(!ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl) && m_MouseGrabberBlock != nullptr)
+                        clearSelection = true;
+                }
+
+                // open context menu of the item
+                if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right))
+                {
+                    // TODO: open context menu
+                }
             }
 
             if(ImGui::IsKeyReleased(ImGuiKey::ImGuiKey_LeftCtrl) &&
@@ -242,22 +226,12 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
 
             if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Escape))
                 clearSelection = true;
-
-            // move object
-            if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Left &&
-                currentObject->m_MouseEvent.type  == FunctionalBlock::MouseEvent::Type::Down &&
-                m_MouseGrabberBlock == nullptr)
-                m_MouseGrabberBlock = currentObject;
-
-            // open context menu
-            if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Right)
-            {
-            }
         }
-        );
+    );
 
     // move items and select mouse grabber item
-    if(m_MouseGrabberBlock != nullptr)
+    if(m_MouseGrabberBlock != nullptr &&
+        m_MouseGrabberPort == nullptr)
     {
         // move items
         auto targetPosition = mousePostion - m_MouseGrabberBlock->get_rect().GetSize() * 0.5f;
@@ -329,9 +303,6 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
 
     // pop clipping rect
     drawList->PopClipRect();
-}
 
-void FunctionalBlockExecutionEnvironment::draw_finish(const glm::mat4& _Transform)
-{
     ImGui::End();
 }
