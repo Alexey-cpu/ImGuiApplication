@@ -5,23 +5,8 @@
 #include "FunctionalBlockPortsConnectionLine.h"
 #include "FunctionalBlockExecutionContext.h"
 #include "DynamicGraph.h"
-//#include "DebugLog.h"
-//#include "Singleton.h"
 
 #include <imgui.h>
-
-class FunctionalBlockExecutionEnvironmentPortsConnector
-{
-public:
-
-    FunctionalBlockExecutionEnvironmentPortsConnector(){}
-    virtual ~FunctionalBlockExecutionEnvironmentPortsConnector(){}
-
-protected:
-
-    FunctionalBlockPort* m_Source = nullptr;
-    FunctionalBlockPort* m_Target = nullptr;
-};
 
 // FunctionalBlockExecutionEnvironment
 class FunctionalBlockExecutionEnvironment :
@@ -174,10 +159,12 @@ public:
     virtual void draw_process() override;
     virtual void draw_finish() override;
 
+    FunctionalBlockPort*    m_MouseGrabberPort       = nullptr;
+
 protected:
 
     FactoryObjectHierarchy* m_Selection    = nullptr;
-    FunctionalBlock*        m_MouseGrabber = nullptr;
+    FunctionalBlock*        m_MouseGrabberBlock = nullptr;
     float                   m_GridSize     = 32.f;
 
     // service methods

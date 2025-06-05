@@ -204,8 +204,44 @@ void FunctionalBlockPort::draw_process()
         rect.GetCenter(),
         rect.GetSize() * 0.5f,
         m_Color);
+
+    // draw connection lines
+    if(get_port_type() == FunctionalBlockPort::Type::OUTPUT)
+    {
+        for(auto adjacentEdge : retrieve_adjacent_edges())
+        {
+            if(adjacentEdge != nullptr)
+                adjacentEdge->draw();
+        }
+    }
 }
+
+#include <QDebug>
 
 void FunctionalBlockPort::draw_finish()
 {
+    // catch mouse event
+    auto executionEnvironment =
+        get_parent_recursive<FunctionalBlockExecutionEnvironment>();
+
+    if(executionEnvironment == nullptr ||
+        !get_geometry().get_rect().Contains(executionEnvironment->get_mouse_scene_position()))
+        return;
+
+    if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) &&
+        ImGui::IsMouseDown(ImGuiMouseButton_::ImGuiMouseButton_Left))
+    {
+        executionEnvironment->m_MouseGrabberPort = this;
+    }
+
+    if(ImGui::IsMouseReleased(ImGuiMouseButton_::ImGuiMouseButton_Left) &&
+        executionEnvironment->m_MouseGrabberPort != this &&
+        executionEnvironment->m_MouseGrabberPort != nullptr)
+    {
+        qDebug() << "Connecting ports !!!";
+
+        auto edge = executionEnvironment->add_edge(executionEnvironment->m_MouseGrabberPort, this);
+
+        if(edge != nullptr) qDebug() << "Connection succeeded !!!";
+    }
 }

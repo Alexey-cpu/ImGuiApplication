@@ -23,7 +23,7 @@ ImVec2 FunctionalBlockExecutionEnvironment::get_mouse_scene_position() const
 }
 
 ImVec2 FunctionalBlockExecutionEnvironment::get_item_scene_position(ImVec2 _Position) const
-{
+{    
     auto geometry = get_geometry();
 
     return _Position * geometry.get_scale() + geometry.get_origin() + geometry.get_offset();
@@ -139,7 +139,7 @@ void FunctionalBlockExecutionEnvironment::draw_process()
     auto geometry = get_geometry();
 
     // compute local mouse position
-    auto mousePosition = (ImGui::GetIO().MousePos - geometry.get_origin() - geometry.get_offset()) / geometry.get_scale();
+    //auto mousePosition = (ImGui::GetIO().MousePos - geometry.get_origin() - geometry.get_offset()) / geometry.get_scale();
 
     // push clipping rect
     drawList->PushClipRect(
@@ -157,6 +157,7 @@ void FunctionalBlockExecutionEnvironment::draw_process()
         geometry.get_rect().GetBR(),
         IM_COL32(0, 255, 0, 255));
 
+    // draw grid
     auto offset = geometry.get_offset();
 
     auto gridSize = m_GridSize * geometry.get_scale();
@@ -181,13 +182,22 @@ void FunctionalBlockExecutionEnvironment::draw_process()
     drawList->AddText(
         ImGui::GetIO().MousePos,
         IM_COL32(0, 255, 0, 255),
-        (std::to_string(mousePosition.x) + " " + std::to_string(mousePosition.y)).c_str());
+        (std::to_string(get_mouse_scene_position().x) + " " + std::to_string(get_mouse_scene_position().y)).c_str());
+
+    // draw mouse grabber port connection line
+    if(m_MouseGrabberPort != nullptr)
+    {
+        drawList->AddLine(
+            get_item_scene_position(m_MouseGrabberPort->get_geometry().get_rect().GetCenter()),
+            ImGui::GetIO().MousePos,
+            IM_COL32(255, 0, 0, 255));
+    }
 
     // draw items
     bool clearSelection = false;
 
     apply_function_to_children_recursuve(
-        [this, &mousePosition, &clearSelection](FactoryObject* _Object)
+        [this, &clearSelection](FactoryObject* _Object)
         {
             FunctionalBlock* currentObject =
                 dynamic_cast<FunctionalBlock*>(_Object);
@@ -202,9 +212,9 @@ void FunctionalBlockExecutionEnvironment::draw_process()
             if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Left &&
                 currentObject->m_MouseEvent.type  == FunctionalBlock::MouseEvent::Type::Click)
             {
-                m_MouseGrabber = currentObject;
+                m_MouseGrabberBlock = currentObject;
 
-                if(!ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl) && m_MouseGrabber != nullptr)
+                if(!ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl) && m_MouseGrabberBlock != nullptr)
                     clearSelection = true;
             }
 
@@ -218,8 +228,8 @@ void FunctionalBlockExecutionEnvironment::draw_process()
             // move object
             if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Left &&
                 currentObject->m_MouseEvent.type  == FunctionalBlock::MouseEvent::Type::Down &&
-                m_MouseGrabber == nullptr)
-                m_MouseGrabber = currentObject;
+                m_MouseGrabberBlock == nullptr)
+                m_MouseGrabberBlock = currentObject;
 
             // open context menu
             if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Right)
@@ -229,11 +239,11 @@ void FunctionalBlockExecutionEnvironment::draw_process()
         );
 
     // move items and select mouse grabber item
-    if(m_MouseGrabber != nullptr)
+    if(m_MouseGrabberBlock != nullptr)
     {
         // move items
-        auto targetPosition = mousePosition - m_MouseGrabber->get_geometry().get_size() * 0.5f;
-        auto translation    = m_MouseGrabber->get_geometry().get_origin() - targetPosition;
+        auto targetPosition = get_mouse_scene_position() - m_MouseGrabberBlock->get_geometry().get_size() * 0.5f;
+        auto translation    = m_MouseGrabberBlock->get_geometry().get_origin() - targetPosition;
 
         m_Selection->apply_function_to_children_recursuve(
             [this, &translation](FactoryObjectHierarchy* _Object)
@@ -251,7 +261,7 @@ void FunctionalBlockExecutionEnvironment::draw_process()
             );
 
         // select mouse grabber item
-        m_MouseGrabber->set_parent(m_Selection);
+        m_MouseGrabberBlock->set_parent(m_Selection);
     }
 
     // clear selected items list
@@ -278,7 +288,7 @@ void FunctionalBlockExecutionEnvironment::draw_process()
         // handle mouse click event
         if(ImGui::IsMouseClicked(button))
         {
-            if(m_MouseGrabber == nullptr)
+            if(m_MouseGrabberBlock == nullptr)
             {
                 auto children = m_Selection->get_children();
                 for(auto child : children)
@@ -289,7 +299,8 @@ void FunctionalBlockExecutionEnvironment::draw_process()
         // handle mouse release event
         if(ImGui::IsMouseReleased(button))
         {
-            m_MouseGrabber = nullptr;
+            m_MouseGrabberBlock = nullptr;
+            m_MouseGrabberPort  = nullptr;
         }
     }
 

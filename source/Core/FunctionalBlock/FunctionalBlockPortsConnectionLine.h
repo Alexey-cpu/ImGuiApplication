@@ -56,6 +56,10 @@ public:
 
         return false;
     }
+
+    virtual void draw_start() override;
+    virtual void draw_process() override;
+    virtual void draw_finish() override;
 };
 
 // FunctionalBlockPortsConnectionLineCreator
