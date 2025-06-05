@@ -177,11 +177,6 @@ FactoryObjectHierarchy* FactoryObjectHierarchy::get_root_item() const
     return item;
 }
 
-FactoryObjectHierarchy::Geometry FactoryObjectHierarchy::get_geometry() const
-{
-    return m_Geometry;
-}
-
 void FactoryObjectHierarchy::set_name(const std::string& _Name)
 {
     m_Name = _Name;
@@ -210,11 +205,6 @@ void FactoryObjectHierarchy::set_parent(FactoryObjectHierarchy* _Parent)
         _Parent->attach_child(this);
         m_Parent = _Parent;
     }
-}
-
-void FactoryObjectHierarchy::set_geometry(const FactoryObjectHierarchy::Geometry& _Geometry)
-{
-    m_Geometry = _Geometry;
 }
 
 void FactoryObjectHierarchy::enable_recursive_children_access()
@@ -341,16 +331,6 @@ std::string FactoryObjectHierarchy::to_string()
 void FactoryObjectHierarchy::from_string(const std::string& _Value)
 {
     (void)_Value;
-}
-
-void FactoryObjectHierarchy::draw_start(){}
-void FactoryObjectHierarchy::draw_process(){}
-void FactoryObjectHierarchy::draw_finish(){}
-void FactoryObjectHierarchy::draw()
-{
-    draw_start();
-    draw_process();
-    draw_finish();
 }
 
 FactoryObjectHierarchy* FactoryObjectHierarchy::find_child_recursuve(

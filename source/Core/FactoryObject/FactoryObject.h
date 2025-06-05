@@ -15,6 +15,12 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+// glm
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+//#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 // absl
 #include <absl/container/btree_map.h>
 
@@ -200,87 +206,6 @@ class FactoryObjectHierarchy : public FactoryObject
 {
 public:
 
-    class Geometry
-    {
-    public:
-        Geometry(
-            const ImVec2& _Origin = ImVec2(0.f, 0.f),
-            const ImVec2& _Size   = ImVec2(128.f, 128.f),
-            const ImVec2& _Offset = ImVec2(0.f, 0.f),
-            const float&  _Scale  = 1.f) :
-            m_Origin(_Origin),
-            m_Size(_Size),
-            m_Offset(_Offset),
-            m_Scale(_Scale)
-        {
-            set_rect(ImRect(m_Origin, m_Origin + m_Size));
-        }
-
-        ~Geometry(){}
-
-        // getters
-        ImVec2 get_origin() const
-        {
-            return m_Origin;
-        }
-
-        ImVec2 get_size() const
-        {
-            return m_Size;
-        }
-
-        ImVec2 get_offset() const
-        {
-            return m_Offset;
-        }
-
-        ImRect get_rect() const
-        {
-            return m_Rect;
-        }
-
-        float get_scale() const
-        {
-            return m_Scale;
-        }
-
-        // setters
-        void set_origin(const ImVec2& _Origin)
-        {
-            set_rect(ImRect(_Origin, _Origin + get_size()));
-        }
-
-        void set_size(const ImVec2& _Size)
-        {
-            set_rect(ImRect(get_origin(), get_origin() + _Size));
-        }
-
-        void set_offset(const ImVec2& _Offset)
-        {
-            m_Offset = _Offset;
-        }
-
-        void set_rect(const ImRect& _Rect)
-        {
-            m_Rect   = _Rect;
-            m_Origin = m_Rect.GetTL();
-            m_Size   = m_Rect.GetSize();
-        }
-
-        void set_scale(float _Scale)
-        {
-            m_Scale = _Scale;
-        }
-
-    protected:
-
-        ImVec2 m_Origin = ImVec2(0.f, 0.f);
-        ImVec2 m_Size   = ImVec2(128.f, 128.f);
-        ImVec2 m_Offset = ImVec2(0.f, 0.f);
-        ImRect m_Rect   = ImRect(m_Origin, m_Origin + m_Size);
-        float  m_Scale  = 1.f;
-    };
-
     FactoryObjectHierarchy(
         const std::string&      _Name   = std::string(),
         FactoryObjectHierarchy* _Parent = nullptr,
@@ -300,7 +225,6 @@ public:
     virtual std::string get_name() const;
     uint64_t get_attributes();
     FactoryObjectHierarchy* get_root_item() const;
-    Geometry get_geometry() const;
 
     template<typename __type = FactoryObjectHierarchy>
     __type* get_parent() const
@@ -499,11 +423,6 @@ public:
     // virtual functions override
     virtual std::string to_string();
     virtual void from_string(const std::string& _Value);
-    virtual void set_geometry(const Geometry& _Geometry);
-    virtual void draw_start();
-    virtual void draw_process();
-    virtual void draw_finish();
-    void draw();
 
 protected:
 
@@ -513,7 +432,6 @@ protected:
     uint64_t                m_Attributes                     = 0;
     FactoryObjectHierarchy* m_Parent                         = nullptr;
     bool                    m_RecursiveChildrenAccessEnabled = true;
-    Geometry                m_Geometry;
 
 private:
 
@@ -624,6 +542,58 @@ private:
     void attach_child(FactoryObjectHierarchy* _Object);
 
     void detach_child(FactoryObjectHierarchy* _Object);
+};
+
+class FactoryObjectRenderer
+{
+public:
+    FactoryObjectRenderer(){}
+    virtual ~FactoryObjectRenderer(){}
+
+    // getters
+    ImRect get_rect(bool _Transformed = false) const
+    {
+        if(_Transformed)
+        {
+            auto topLeft     = m_Transform * glm::vec4(m_Rect.GetTL().x, m_Rect.GetTL().y, 0.f, 1.f);
+            auto bottomRight = m_Transform * glm::vec4(m_Rect.GetBR().x, m_Rect.GetBR().y, 0.f, 1.f);
+            return ImRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
+        }
+
+        return m_Rect;
+    }
+
+    glm::mat4 get_transform() const
+    {
+        return m_Transform;
+    }
+
+    // setters
+    void set_rect(const ImRect& _Rect)
+    {
+        m_Rect = _Rect;
+    }
+
+    void set_transformation(const glm::mat4& _Transform)
+    {
+        m_Transform = _Transform;
+    }
+
+    // API
+    virtual void draw_start(const glm::mat4& _Transform){}
+    virtual void draw_process(const glm::mat4& _Transform){}
+    virtual void draw_finish(const glm::mat4& _Transform){}
+
+    void draw(const glm::mat4& _Transform = glm::mat4(1.f))
+    {
+        draw_start(_Transform);
+        draw_process(_Transform);
+        draw_finish(_Transform);
+    }
+
+protected:
+    ImRect    m_Rect      = ImRect(0.f, 0.f, 32.f, 32.f);
+    glm::mat4 m_Transform = glm::mat4(1.f);
 };
 
 // FactoryObjectUUIDChecker

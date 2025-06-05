@@ -9,9 +9,7 @@
 #include <imgui.h>
 
 // FunctionalBlockExecutionEnvironment
-class FunctionalBlockExecutionEnvironment :
-    public DynamicGraph,
-    public IPugiXMLSerializable
+class FunctionalBlockExecutionEnvironment : public DynamicGraph, public IPugiXMLSerializable, public FactoryObjectRenderer
 {
 public:
 
@@ -31,10 +29,6 @@ public:
 
     // virtual destructor
     virtual ~FunctionalBlockExecutionEnvironment();
-
-    ImVec2 get_mouse_scene_position() const;
-    ImVec2 get_item_scene_position(ImVec2 _Position) const;
-    float get_grid_size() const;
 
     template<typename __type>
     bool process()
@@ -144,6 +138,11 @@ public:
                context->postprocess();
     }
 
+    //----------------------------------------------------------------------------------------------------------------------------------------
+    //ImVec2 get_mouse_scene_position() const;
+    //ImVec2 get_item_scene_position(ImVec2 _Position) const;
+    //float get_grid_size() const;
+
     enum DrawChannels
     {
         Main,
@@ -155,17 +154,19 @@ public:
 
     virtual pugi::xml_node pugi_serialize(pugi::xml_node& _Parent) override;
     virtual bool pugi_deserialize(pugi::xml_node& _Node) override;
-    virtual void draw_start() override;
-    virtual void draw_process() override;
-    virtual void draw_finish() override;
+
+    virtual void draw_start(const glm::mat4& _Transform) override;
+    virtual void draw_process(const glm::mat4& _Transform) override;
+    virtual void draw_finish(const glm::mat4& _Transform) override;
 
     FunctionalBlockPort*    m_MouseGrabberPort       = nullptr;
+    //----------------------------------------------------------------------------------------------------------------------------------------
 
 protected:
 
-    FactoryObjectHierarchy* m_Selection    = nullptr;
+    FactoryObjectHierarchy* m_Selection         = nullptr;
     FunctionalBlock*        m_MouseGrabberBlock = nullptr;
-    float                   m_GridSize     = 32.f;
+    float                   m_GridSize          = 32.f;
 
     // service methods
     virtual void abort()

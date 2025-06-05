@@ -167,28 +167,18 @@ pugi::xml_node FunctionalBlockPort::pugi_serialize(pugi::xml_node& _Parent)
     return data;
 }
 
-void FunctionalBlockPort::draw_start()
+void FunctionalBlockPort::draw_start(const glm::mat4& _Transform)
 {
     // setup draw channel
     ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Ports);
-
-    // catch mouse events
 }
 
-void FunctionalBlockPort::draw_process()
+void FunctionalBlockPort::draw_process(const glm::mat4& _Transform)
 {
-    auto executionEnvironment =
-        get_parent_recursive<FunctionalBlockExecutionEnvironment>();
-
-    if(executionEnvironment == nullptr)
-        return;
-
-    auto geometry = get_geometry();
+    set_transformation(_Transform);
 
     // draw self
-    auto rect = ImRect(
-        executionEnvironment->get_item_scene_position(geometry.get_rect().GetTL()),
-        executionEnvironment->get_item_scene_position(geometry.get_rect().GetBR()));
+    auto rect = ImRect(get_rect(true).GetTL(), get_rect(true).GetBR());
 
 
     ImGui::GetWindowDrawList()->AddEllipse(
@@ -197,7 +187,7 @@ void FunctionalBlockPort::draw_process()
         m_Color,
         0.f,
         ImGui::GetWindowDrawList()->_CalcCircleAutoSegmentCount(ImMax(rect.GetSize().x, rect.GetSize().y) * 0.5f),
-        geometry.get_rect().Contains(executionEnvironment->get_mouse_scene_position()) ||
+        rect.Contains(ImGui::GetIO().MousePos) ||
                get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f);
 
     ImGui::GetWindowDrawList()->AddEllipseFilled(
@@ -210,27 +200,31 @@ void FunctionalBlockPort::draw_process()
     {
         for(auto adjacentEdge : retrieve_adjacent_edges())
         {
-            if(adjacentEdge != nullptr)
-                adjacentEdge->draw();
+            auto edge = dynamic_cast<FunctionalBlockPortsConnectionLine*>(adjacentEdge);
+
+            if(edge != nullptr)
+                edge->draw();
         }
     }
 }
 
 #include <QDebug>
 
-void FunctionalBlockPort::draw_finish()
+void FunctionalBlockPort::draw_finish(const glm::mat4& _Transform)
 {
     // catch mouse event
     auto executionEnvironment =
         get_parent_recursive<FunctionalBlockExecutionEnvironment>();
 
     if(executionEnvironment == nullptr ||
-        !get_geometry().get_rect().Contains(executionEnvironment->get_mouse_scene_position()))
+        !ImRect(get_rect(true).GetTL(), get_rect(true).GetBR()).Contains(ImGui::GetIO().MousePos))
         return;
 
     if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) &&
         ImGui::IsMouseDown(ImGuiMouseButton_::ImGuiMouseButton_Left))
     {
+        qDebug() << "Setup the source port !!!";
+
         executionEnvironment->m_MouseGrabberPort = this;
     }
 

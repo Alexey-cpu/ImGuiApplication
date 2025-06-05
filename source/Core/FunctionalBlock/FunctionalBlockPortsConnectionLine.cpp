@@ -1,9 +1,9 @@
 #include <FunctionalBlockPortsConnectionLine.h>
 #include <FunctionalBlockExecutionEnvironment.h>
 
-void FunctionalBlockPortsConnectionLine::draw_start(){}
+void FunctionalBlockPortsConnectionLine::draw_start(const glm::mat4& _Transform){}
 
-void FunctionalBlockPortsConnectionLine::draw_process()
+void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transform)
 {
     if(get_source() == nullptr ||
         get_target() == nullptr)
@@ -21,12 +21,12 @@ void FunctionalBlockPortsConnectionLine::draw_process()
     //            get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f
     //    );
 
-    auto source = get_source()->get_geometry().get_rect().GetCenter();
-    auto target = get_target()->get_geometry().get_rect().GetCenter();
+    auto source = get_source<FunctionalBlockPort>()->get_rect(true).GetCenter();
+    auto target = get_target<FunctionalBlockPort>()->get_rect().GetCenter();
 
     ImGui::GetWindowDrawList()->AddLine(
-        graph->get_item_scene_position(source),
-        graph->get_item_scene_position(target),
+        source,
+        target,
         IM_COL32(0, 255, 0, 255));
 
     // use with:
@@ -35,4 +35,4 @@ void FunctionalBlockPortsConnectionLine::draw_process()
     //bool is_segment_hovered = (ImLengthSqr(mouse_pos_delta_to_segment ) <= max_distance * max_distance);
 }
 
-void FunctionalBlockPortsConnectionLine::draw_finish(){}
+void FunctionalBlockPortsConnectionLine::draw_finish(const glm::mat4& _Transform){}

@@ -10,3 +10,6 @@
 [submodule "tools/abseil"]
 	path = tools/abseil
 	url = https://github.com/Alexey-cpu/abseil-cpp.git
+[submodule "tools/glm"]
+	path = tools/glm
+	url = https://github.com/g-truc/glm.git

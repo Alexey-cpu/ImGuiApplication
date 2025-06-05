@@ -433,7 +433,7 @@ public:
 };
 
 // FunctionalBlock
-class FunctionalBlock : public DynamicGraphNode, public IPugiXMLSerializable
+class FunctionalBlock : public DynamicGraphNode, public IPugiXMLSerializable, public FactoryObjectRenderer
 {
 public:
 
@@ -604,10 +604,10 @@ public:
     //----------------------------------------------------------------------------------
     // IMGUI
     //----------------------------------------------------------------------------------
-    virtual void set_geometry(const Geometry& _Geometry) override;
-    virtual void draw_start() override;
-    virtual void draw_process() override;
-    virtual void draw_finish() override;
+    //virtual void set_geometry(const Geometry& _Geometry) override;
+    virtual void draw_start(const glm::mat4& _Transform) override;
+    virtual void draw_process(const glm::mat4& _Transform) override;
+    virtual void draw_finish(const glm::mat4& _Transform) override;
 
     ImU32 m_Color = IM_COL32(
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
@@ -615,7 +615,7 @@ public:
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
         255);
 
-    ImRect m_MouseCatcher;
+    //ImRect m_MouseCatcher;
 
     struct MouseEvent
     {
@@ -646,7 +646,6 @@ public:
 
     } m_KeyEvent;
     //----------------------------------------------------------------------------------
-
 
 protected:
 

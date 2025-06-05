@@ -329,68 +329,70 @@ bool FunctionalBlock::pugi_deserialize(pugi::xml_node& _Node)
 //---------------------------------------------------------------------------------------------------------------------
 #include <QDebug>
 
-void FunctionalBlock::set_geometry(const Geometry& _Geometry)
-{
-    auto executionEnvironment =
-        get_parent_recursive<FunctionalBlockExecutionEnvironment>();
+void FunctionalBlock::draw_start(const glm::mat4& _Transform){}
 
-    // align self to a grid
-    auto gridSize = executionEnvironment != nullptr ? executionEnvironment->get_grid_size() : 1.f;
-
-    auto origin = ImVec2(std::roundf(_Geometry.get_origin().x / gridSize), std::roundf(_Geometry.get_origin().y / gridSize)) * gridSize;
-    auto size   = _Geometry.get_size();
-    auto offset = _Geometry.get_offset();
-    auto scale  = _Geometry.get_scale();
-
-    m_Geometry = Geometry(origin, size, offset, scale);
-}
-
-void FunctionalBlock::draw_start()
+void FunctionalBlock::draw_process(const glm::mat4& _Transform)
 {
     ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Blocks);
-}
 
-void FunctionalBlock::draw_process()
-{
-    auto executionEnvironment =
-        get_parent_recursive<FunctionalBlockExecutionEnvironment>();
+    // catch mouse events
+    bool hovered = ImRect(
+                       get_rect(true).GetTL() + get_rect().GetSize() * 0.1f,
+                       get_rect(true).GetBR() - get_rect().GetSize() * 0.1f).Contains(ImGui::GetIO().MousePos);
 
-    if(executionEnvironment == nullptr)
-        return;
+    m_MouseEvent.type = MouseEvent::Type::None;
 
-    // get geometry
-    auto geometry = get_geometry();
+    if(hovered)
+    {
+        for(size_t button = ImGuiMouseButton_::ImGuiMouseButton_Left;
+             button < ImGuiMouseButton_::ImGuiMouseButton_Middle; button++)
+        {
+            m_MouseEvent.button = (ImGuiMouseButton_)button;
 
-    // compute ports geometry
-    auto inputsSpace  = geometry.get_rect().GetSize() / get_inputs_root()->get_children().size();
-    auto outputsSpace = geometry.get_rect().GetSize() / get_outputs_root()->get_children().size();
-    auto portSize     = ImVec2(std::min(inputsSpace.x, outputsSpace.x), std::min(inputsSpace.y, outputsSpace.y));
+            if(ImGui::IsMouseClicked(button))
+            {
+                m_MouseEvent.type = MouseEvent::Type::Click;
+                break;
+            }
+
+            if(ImGui::IsMouseReleased(button))
+            {
+                m_MouseEvent.type = MouseEvent::Type::Release;
+                break;
+            }
+
+            if(ImGui::IsMouseDown(button))
+            {
+                m_MouseEvent.type = MouseEvent::Type::Down;
+                break;
+            }
+        }
+    }
 
     // draw self
-    m_MouseCatcher = ImRect(geometry.get_origin() + portSize * 0.5f, geometry.get_origin() + geometry.get_size() - portSize * 0.5f);
-
-    auto rect = ImRect(
-        executionEnvironment->get_item_scene_position(geometry.get_rect().GetTL()),
-        executionEnvironment->get_item_scene_position(geometry.get_rect().GetBR()));
+    set_transformation(_Transform);
 
     ImGui::GetWindowDrawList()->AddRect(
-        rect.GetTL(),
-        rect.GetBR(),
+        get_rect(true).GetTL(),
+        get_rect(true).GetBR(),
         m_Color,
         0.f,
         ImDrawFlags_::ImDrawFlags_None,
-        m_MouseCatcher.Contains(executionEnvironment->get_mouse_scene_position()) ||
-                get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f
+        hovered || get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f
         );
 
+    // draw ports
+    auto inputsSpace  = get_rect().GetSize() / get_inputs_root()->get_children().size();
+    auto outputsSpace = get_rect().GetSize() / get_outputs_root()->get_children().size();
+    auto portSize     = ImVec2(std::min(inputsSpace.x, outputsSpace.x), std::min(inputsSpace.y, outputsSpace.y));
 
     {
-        auto portOrigin  = geometry.get_rect().GetTL() + ImVec2(0.f, inputsSpace.y / 2.0);
+        auto portOrigin  = get_rect().GetTL() + ImVec2(0.f, inputsSpace.y / 2.0);
         auto portOffset  = ImVec2(0.f, portSize.y);
         auto drawChannel = 0;
 
         get_inputs_root()->apply_function_to_children_recursuve(
-            [&portOrigin, &portSize, &portOffset, &drawChannel](FactoryObject* _Object)
+            [&portOrigin, &portSize, &portOffset, &drawChannel, &_Transform](FactoryObject* _Object)
             {
                 FunctionalBlockPort* port =
                     dynamic_cast<FunctionalBlockPort*>(_Object);
@@ -398,9 +400,10 @@ void FunctionalBlock::draw_process()
                 // TODO: draw ports here !!!
                 if(port != nullptr)
                 {
-                    ImRect r(portOrigin, portOrigin + portSize);
-                    port->set_geometry(FactoryObjectHierarchy::Geometry(r.GetTL() - r.GetSize() * 0.25f, r.GetSize() * 0.5f));
-                    port->draw();
+                    auto origin = portOrigin - portSize * 0.5f;
+                    port->set_rect(ImRect(ImRect(origin, origin + portSize)));
+                    port->set_transformation(_Transform);
+                    port->draw(_Transform);
                     portOrigin += portOffset;
                     drawChannel++;
                 }
@@ -410,12 +413,12 @@ void FunctionalBlock::draw_process()
 
     // draw outputs
     {
-        auto portOrigin = geometry.get_rect().GetTR() + ImVec2(0.f, portSize.y / 2.0);
+        auto portOrigin = get_rect().GetTR() + ImVec2(0.f, portSize.y / 2.0);
         auto portOffset = ImVec2(0.f, portSize.y);
         auto drawChannel = 0;
 
         get_outputs_root()->apply_function_to_children_recursuve(
-            [&portOrigin, &portSize, &portOffset, &drawChannel](FactoryObject* _Object)
+            [&portOrigin, &portSize, &portOffset, &drawChannel, &_Transform](FactoryObject* _Object)
             {
                 FunctionalBlockPort* port =
                     dynamic_cast<FunctionalBlockPort*>(_Object);
@@ -423,50 +426,18 @@ void FunctionalBlock::draw_process()
                 // TODO: draw ports here !!!
                 if(port != nullptr)
                 {
-                    ImRect r(portOrigin, portOrigin + portSize);
-                    port->set_geometry(FactoryObjectHierarchy::Geometry(r.GetTL() - r.GetSize() * 0.25f, r.GetSize() * 0.5f));
-                    port->draw();
+                    auto origin = portOrigin - portSize * 0.5f;
+                    port->set_rect(ImRect(ImRect(origin, origin + portSize)));
+                    port->set_transformation(_Transform);
+                    port->draw(_Transform);
                     portOrigin += portOffset;
+                    drawChannel++;
                 }
             }
             );
     }
 }
 
-void FunctionalBlock::draw_finish()
+void FunctionalBlock::draw_finish(const glm::mat4& _Transform)
 {
-    // clear event cache
-    m_MouseEvent.type = MouseEvent::Type::None;
-
-    // catch mouse event
-    auto executionEnvironment =
-        get_parent_recursive<FunctionalBlockExecutionEnvironment>();
-
-    if(executionEnvironment == nullptr ||
-        !m_MouseCatcher.Contains(executionEnvironment->get_mouse_scene_position()))
-        return;
-
-    for(size_t button = ImGuiMouseButton_::ImGuiMouseButton_Left;
-         button < ImGuiMouseButton_::ImGuiMouseButton_Middle; button++)
-    {
-        m_MouseEvent.button = (ImGuiMouseButton_)button;
-
-        if(ImGui::IsMouseClicked(button))
-        {
-            m_MouseEvent.type = MouseEvent::Type::Click;
-            return;
-        }
-
-        if(ImGui::IsMouseReleased(button))
-        {
-            m_MouseEvent.type = MouseEvent::Type::Release;
-            return;
-        }
-
-        if(ImGui::IsMouseDown(button))
-        {
-            m_MouseEvent.type = MouseEvent::Type::Down;
-            return;
-        }
-    }
 }

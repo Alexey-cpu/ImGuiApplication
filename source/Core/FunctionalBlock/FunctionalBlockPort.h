@@ -15,10 +15,7 @@
 #include <Singleton.h>
 
 // FunctionalBlockPort
-class FunctionalBlockPort :
-    public DynamicGraphNode,
-    public FactoryObjectComponent,
-    public IPugiXMLSerializable
+class FunctionalBlockPort : public DynamicGraphNode, public FactoryObjectComponent, public IPugiXMLSerializable, public FactoryObjectRenderer
 {
 public:
 
@@ -55,9 +52,9 @@ public:
     //----------------------------------------------------------------------------------
     // GEOMETRY
     //----------------------------------------------------------------------------------
-    virtual void draw_start() override;
-    virtual void draw_process() override;
-    virtual void draw_finish() override;
+    virtual void draw_start(const glm::mat4& _Transform) override;
+    virtual void draw_process(const glm::mat4& _Transform) override;
+    virtual void draw_finish(const glm::mat4& _Transform) override;
 
     ImU32 m_Color = IM_COL32(
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),

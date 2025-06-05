@@ -16,24 +16,6 @@ FunctionalBlockExecutionEnvironment::FunctionalBlockExecutionEnvironment(
 
 FunctionalBlockExecutionEnvironment::~FunctionalBlockExecutionEnvironment(){}
 
-ImVec2 FunctionalBlockExecutionEnvironment::get_mouse_scene_position() const
-{
-    auto geometry = get_geometry();
-    return (ImGui::GetIO().MousePos - geometry.get_origin() - geometry.get_offset()) / geometry.get_scale();
-}
-
-ImVec2 FunctionalBlockExecutionEnvironment::get_item_scene_position(ImVec2 _Position) const
-{    
-    auto geometry = get_geometry();
-
-    return _Position * geometry.get_scale() + geometry.get_origin() + geometry.get_offset();
-};
-
-float FunctionalBlockExecutionEnvironment::get_grid_size() const
-{
-    return m_GridSize;
-}
-
 pugi::xml_node FunctionalBlockExecutionEnvironment::pugi_serialize(pugi::xml_node& _Parent)
 {
     auto xelement = _Parent.append_child(STRINGIFY(FunctionalBlockExecutionEnvironment));
@@ -104,91 +86,127 @@ bool FunctionalBlockExecutionEnvironment::pugi_deserialize(pugi::xml_node& _Node
 
 #include <QDebug>
 
-void FunctionalBlockExecutionEnvironment::draw_start()
+/*
+float FunctionalBlockExecutionEnvironment::get_grid_size() const
 {
-    ImGui::Begin(get_name().c_str());
+    return m_GridSize;
+}
+
+ImVec2 FunctionalBlockExecutionEnvironment::get_mouse_scene_position() const
+{
+    //auto geometry = get_geometry();
+    return ImVec2();//(ImGui::GetIO().MousePos - geometry.get_origin() - geometry.get_offset()) / geometry.get_scale();
+}
+
+ImVec2 FunctionalBlockExecutionEnvironment::get_item_scene_position(ImVec2 _Position) const
+{
+    return ImVec2();
+
+    //auto geometry = get_geometry();
+
+    //return _Position * geometry.get_scale() + geometry.get_origin() + geometry.get_offset();
+};
+*/
+
+void FunctionalBlockExecutionEnvironment::draw_start(const glm::mat4& _Transform)
+{
+    // retrieve IO
     ImGuiIO& io = ImGui::GetIO();
+
+    // configure scene
+    ImGui::Begin(get_name().c_str());
+    ImGui::SetCursorScreenPos(ImVec2(0.f, 0.f));
+
+    auto origin = ImGui::GetCursorScreenPos();
+    auto size   = ImVec2(std::max(ImGui::GetContentRegionAvail().x, 64.f), std::max(ImGui::GetContentRegionAvail().y, 64.f));
+
+    ImGui::InvisibleButton(
+        "Scene2D",
+        size,
+        ImGuiButtonFlags_::ImGuiButtonFlags_MouseButtonMask_);
 
     ImGui::GetWindowDrawList()->ChannelsSplit(FunctionalBlockExecutionEnvironment::DrawChannels::Last);
     ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Main);
 
-    // retrieve geometry
-    auto origin = ImGui::GetCursorScreenPos();
-    auto size   = ImVec2(std::max(ImGui::GetContentRegionAvail().x, m_GridSize), std::max(ImGui::GetContentRegionAvail().y, m_GridSize));
-    auto offset = get_geometry().get_offset();
-    auto scale  = get_geometry().get_scale();
-
-    // draw invisible button to handle mouse and key events
-    ImGui::InvisibleButton("Scene2D", size, ImGuiButtonFlags_MouseButtonMask_);
+    // compute transformation matrix
+    glm::mat4 transform = get_transform();
 
     // drag
     if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
-        offset += io.MouseDelta;
+        transform = glm::translate(transform, glm::vec3(io.MouseDelta.x, io.MouseDelta.y, 0.0f));
 
     // zoom
     if (io.MouseWheel != 0)
+    {
+        float scale = std::max(std::max(transform[0][0], transform[1][1]), transform[2][2]);
         scale = ImClamp(scale + io.MouseWheel * scale / 16.f, 0.0001f, 100.f);
+        transform[0][0] = scale;
+        transform[1][1] = scale;
+        transform[2][2] = scale;
+    }
 
-    // setup geometry
-    set_geometry(Geometry(origin, size, offset, scale));
+    // setup geometry and transformation matrix
+    set_rect(ImRect(origin, origin + size));
+    set_transformation(transform);
 }
 
-void FunctionalBlockExecutionEnvironment::draw_process()
+void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transform)
 {
     auto drawList = ImGui::GetWindowDrawList();
-    auto geometry = get_geometry();
-
-    // compute local mouse position
-    //auto mousePosition = (ImGui::GetIO().MousePos - geometry.get_origin() - geometry.get_offset()) / geometry.get_scale();
 
     // push clipping rect
     drawList->PushClipRect(
-        geometry.get_rect().GetTL(),
-        geometry.get_rect().GetBR(), true);
+        get_rect().GetTL(),
+        get_rect().GetBR(), true);
 
     // draw background
     drawList->AddRectFilled(
-        geometry.get_rect().GetTL(),
-        geometry.get_rect().GetBR(),
+        get_rect().GetTL(),
+        get_rect().GetBR(),
         IM_COL32(64, 64, 64, 255));
 
     drawList->AddRect(
-        geometry.get_rect().GetTL(),
-        geometry.get_rect().GetBR(),
+        get_rect().GetTL(),
+        get_rect().GetBR(),
         IM_COL32(0, 255, 0, 255));
 
     // draw grid
-    auto offset = geometry.get_offset();
+    auto rect      = get_rect();
+    auto transform = get_transform();
+    auto offset    = ImVec2(transform[3][0], transform[3][1]);
+    auto scale     = std::max(std::max(transform[0][0], transform[1][1]), transform[2][2]);
+    auto gridSize  = m_GridSize * scale;
 
-    auto gridSize = m_GridSize * geometry.get_scale();
-
-    for (float x = fmodf(offset.x, gridSize); x < geometry.get_size().x; x += gridSize)
+    for (float x = fmodf(offset.x, gridSize); x < rect.GetSize().x; x += gridSize)
     {
         drawList->AddLine(
-            ImVec2(geometry.get_rect().GetTL().x + x, geometry.get_rect().GetTL().y),
-            ImVec2(geometry.get_rect().GetTL().x + x, geometry.get_rect().GetBR().y),
+            ImVec2(get_rect().GetTL().x + x, get_rect().GetTL().y),
+            ImVec2(get_rect().GetTL().x + x, get_rect().GetBR().y),
             IM_COL32(200, 200, 200, 40));
     }
 
-    for (float y = fmodf(offset.y, gridSize); y < geometry.get_size().y; y += gridSize)
+    for (float y = fmodf(offset.y, gridSize); y < rect.GetSize().y; y += gridSize)
     {
         drawList->AddLine(
-            ImVec2(geometry.get_rect().GetTL().x, geometry.get_rect().GetTL().y + y),
-            ImVec2(geometry.get_rect().GetTR().x, geometry.get_rect().GetTL().y + y),
+            ImVec2(get_rect().GetTL().x, get_rect().GetTL().y + y),
+            ImVec2(get_rect().GetTR().x, get_rect().GetTL().y + y),
             IM_COL32(200, 200, 200, 40));
     }
 
     // draw cursor
+    glm::mat4 mouseTransform = glm::mat4(1.f);
+    ImVec2    mousePostion   = (ImGui::GetIO().MousePos - offset) / scale;
+
     drawList->AddText(
-        ImGui::GetIO().MousePos,
+        ImGui::GetMousePos(),
         IM_COL32(0, 255, 0, 255),
-        (std::to_string(get_mouse_scene_position().x) + " " + std::to_string(get_mouse_scene_position().y)).c_str());
+        (std::to_string(mousePostion.x) + " " + std::to_string(mousePostion.y)).c_str());
 
     // draw mouse grabber port connection line
     if(m_MouseGrabberPort != nullptr)
     {
         drawList->AddLine(
-            get_item_scene_position(m_MouseGrabberPort->get_geometry().get_rect().GetCenter()),
+            m_MouseGrabberPort->get_rect(true).GetCenter(),
             ImGui::GetIO().MousePos,
             IM_COL32(255, 0, 0, 255));
     }
@@ -206,7 +224,7 @@ void FunctionalBlockExecutionEnvironment::draw_process()
                 return;
 
             // catch object mouse events
-            currentObject->draw();
+            currentObject->draw(get_transform());
 
             // select object
             if(currentObject->m_MouseEvent.button == ImGuiMouseButton_::ImGuiMouseButton_Left &&
@@ -242,11 +260,11 @@ void FunctionalBlockExecutionEnvironment::draw_process()
     if(m_MouseGrabberBlock != nullptr)
     {
         // move items
-        auto targetPosition = get_mouse_scene_position() - m_MouseGrabberBlock->get_geometry().get_size() * 0.5f;
-        auto translation    = m_MouseGrabberBlock->get_geometry().get_origin() - targetPosition;
+        auto targetPosition = mousePostion - m_MouseGrabberBlock->get_rect().GetSize() * 0.5f;
+        auto translation    = m_MouseGrabberBlock->get_rect().GetTL() - targetPosition;
 
         m_Selection->apply_function_to_children_recursuve(
-            [this, &translation](FactoryObjectHierarchy* _Object)
+            [this, &translation, &gridSize](FactoryObjectHierarchy* _Object)
             {
                 FunctionalBlock* selectedObject =
                     dynamic_cast<FunctionalBlock*>(_Object);
@@ -254,9 +272,14 @@ void FunctionalBlockExecutionEnvironment::draw_process()
                 if(selectedObject == nullptr)
                     return;
 
-                auto geometry = selectedObject->get_geometry();
-                geometry.set_origin(geometry.get_origin() - translation);
-                selectedObject->set_geometry(geometry);
+                auto geometry = selectedObject->get_rect();
+                auto origin   = geometry.GetTL() - translation;
+                auto size     = geometry.GetSize();
+
+                origin = ImVec2(std::roundf(origin.x / m_GridSize) * m_GridSize,
+                                std::roundf(origin.y / m_GridSize) * m_GridSize);
+
+                selectedObject->set_rect(ImRect(origin, origin + size));
             }
             );
 
@@ -308,7 +331,7 @@ void FunctionalBlockExecutionEnvironment::draw_process()
     drawList->PopClipRect();
 }
 
-void FunctionalBlockExecutionEnvironment::draw_finish()
+void FunctionalBlockExecutionEnvironment::draw_finish(const glm::mat4& _Transform)
 {
     ImGui::End();
 }
