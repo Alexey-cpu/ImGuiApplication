@@ -10,6 +10,19 @@
 
 #include <imgui.h>
 
+class FunctionalBlockExecutionEnvironmentPortsConnector
+{
+public:
+
+    FunctionalBlockExecutionEnvironmentPortsConnector(){}
+    virtual ~FunctionalBlockExecutionEnvironmentPortsConnector(){}
+
+protected:
+
+    FunctionalBlockPort* m_Source = nullptr;
+    FunctionalBlockPort* m_Target = nullptr;
+};
+
 // FunctionalBlockExecutionEnvironment
 class FunctionalBlockExecutionEnvironment :
     public DynamicGraph,
@@ -145,6 +158,15 @@ public:
         return context != nullptr &&
                context->postprocess();
     }
+
+    enum DrawChannels
+    {
+        Main,
+        Blocks,
+        Lines,
+        Ports,
+        Last,
+    };
 
     virtual pugi::xml_node pugi_serialize(pugi::xml_node& _Parent) override;
     virtual bool pugi_deserialize(pugi::xml_node& _Node) override;

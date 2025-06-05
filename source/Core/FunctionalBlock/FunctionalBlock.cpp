@@ -347,6 +347,94 @@ void FunctionalBlock::set_geometry(const Geometry& _Geometry)
 
 void FunctionalBlock::draw_start()
 {
+    ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Blocks);
+}
+
+void FunctionalBlock::draw_process()
+{
+    auto executionEnvironment =
+        get_parent_recursive<FunctionalBlockExecutionEnvironment>();
+
+    if(executionEnvironment == nullptr)
+        return;
+
+    // get geometry
+    auto geometry = get_geometry();
+
+    // compute ports geometry
+    auto inputsSpace  = geometry.get_rect().GetSize() / get_inputs_root()->get_children().size();
+    auto outputsSpace = geometry.get_rect().GetSize() / get_outputs_root()->get_children().size();
+    auto portSize     = ImVec2(std::min(inputsSpace.x, outputsSpace.x), std::min(inputsSpace.y, outputsSpace.y));
+
+    // draw self
+    m_MouseCatcher = ImRect(geometry.get_origin() + portSize * 0.5f, geometry.get_origin() + geometry.get_size() - portSize * 0.5f);
+
+    auto rect = ImRect(
+        executionEnvironment->get_item_scene_position(geometry.get_rect().GetTL()),
+        executionEnvironment->get_item_scene_position(geometry.get_rect().GetBR()));
+
+    ImGui::GetWindowDrawList()->AddRect(
+        rect.GetTL(),
+        rect.GetBR(),
+        m_Color,
+        0.f,
+        ImDrawFlags_::ImDrawFlags_None,
+        m_MouseCatcher.Contains(executionEnvironment->get_mouse_scene_position()) ||
+                get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f
+        );
+
+
+    {
+        auto portOrigin  = geometry.get_rect().GetTL() + ImVec2(0.f, inputsSpace.y / 2.0);
+        auto portOffset  = ImVec2(0.f, portSize.y);
+        auto drawChannel = 0;
+
+        get_inputs_root()->apply_function_to_children_recursuve(
+            [&portOrigin, &portSize, &portOffset, &drawChannel](FactoryObject* _Object)
+            {
+                FunctionalBlockPort* port =
+                    dynamic_cast<FunctionalBlockPort*>(_Object);
+
+                // TODO: draw ports here !!!
+                if(port != nullptr)
+                {
+                    ImRect r(portOrigin, portOrigin + portSize);
+                    port->set_geometry(FactoryObjectHierarchy::Geometry(r.GetTL() - r.GetSize() * 0.25f, r.GetSize() * 0.5f));
+                    port->draw();
+                    portOrigin += portOffset;
+                    drawChannel++;
+                }
+            }
+            );
+    }
+
+    // draw outputs
+    {
+        auto portOrigin = geometry.get_rect().GetTR() + ImVec2(0.f, portSize.y / 2.0);
+        auto portOffset = ImVec2(0.f, portSize.y);
+        auto drawChannel = 0;
+
+        get_outputs_root()->apply_function_to_children_recursuve(
+            [&portOrigin, &portSize, &portOffset, &drawChannel](FactoryObject* _Object)
+            {
+                FunctionalBlockPort* port =
+                    dynamic_cast<FunctionalBlockPort*>(_Object);
+
+                // TODO: draw ports here !!!
+                if(port != nullptr)
+                {
+                    ImRect r(portOrigin, portOrigin + portSize);
+                    port->set_geometry(FactoryObjectHierarchy::Geometry(r.GetTL() - r.GetSize() * 0.25f, r.GetSize() * 0.5f));
+                    port->draw();
+                    portOrigin += portOffset;
+                }
+            }
+            );
+    }
+}
+
+void FunctionalBlock::draw_finish()
+{
     // clear event cache
     m_MouseEvent.type = MouseEvent::Type::None;
 
@@ -355,7 +443,7 @@ void FunctionalBlock::draw_start()
         get_parent_recursive<FunctionalBlockExecutionEnvironment>();
 
     if(executionEnvironment == nullptr ||
-        !get_geometry().get_rect().Contains(executionEnvironment->get_mouse_scene_position()))
+        !m_MouseCatcher.Contains(executionEnvironment->get_mouse_scene_position()))
         return;
 
     for(size_t button = ImGuiMouseButton_::ImGuiMouseButton_Left;
@@ -382,82 +470,3 @@ void FunctionalBlock::draw_start()
         }
     }
 }
-
-void FunctionalBlock::draw_process()
-{
-    auto executionEnvironment =
-        get_parent_recursive<FunctionalBlockExecutionEnvironment>();
-
-    if(executionEnvironment == nullptr)
-        return;
-
-    // get geometry
-    auto geometry = get_geometry();
-
-    // draw self
-    auto rect = ImRect(
-        executionEnvironment->get_item_scene_position(geometry.get_rect().GetTL()),
-        executionEnvironment->get_item_scene_position(geometry.get_rect().GetBR()));
-
-    ImGui::GetWindowDrawList()->AddRect(
-        rect.GetTL(),
-        rect.GetBR(),
-        m_Color,
-        0.f,
-        ImDrawFlags_::ImDrawFlags_None,
-        geometry.get_rect().Contains(executionEnvironment->get_mouse_scene_position()) ||
-                get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f
-        );
-
-    // draw inputs
-    {
-        auto portSpace  = geometry.get_rect().GetSize() / get_inputs_root()->get_children().size();
-        auto portOrigin = geometry.get_rect().GetTL() + ImVec2(0.f, portSpace.y / 2.0);
-        auto portSize   = portSpace;
-        auto portOffset = ImVec2(0.f, portSize.y);
-
-        get_inputs_root()->apply_function_to_children_recursuve(
-            [&portOrigin, &portSize, &portOffset](FactoryObject* _Object)
-            {
-                FunctionalBlockPort* port =
-                    dynamic_cast<FunctionalBlockPort*>(_Object);
-
-                // TODO: draw ports here !!!
-                if(port != nullptr)
-                {
-                    ImRect r(portOrigin, portOrigin + portSize);
-                    port->set_geometry(FactoryObjectHierarchy::Geometry(r.GetTL(), r.GetSize() * 0.5f));
-                    port->draw();
-                    portOrigin += portOffset;
-                }
-            }
-            );
-    }
-
-    // draw outputs
-    {
-        auto portSpace  = geometry.get_rect().GetSize() / get_inputs_root()->get_children().size();
-        auto portOrigin = geometry.get_rect().GetTR() + ImVec2(0.f, portSpace.y / 2.0);
-        auto portSize   = portSpace;
-        auto portOffset = ImVec2(0.f, portSize.y);
-
-        get_outputs_root()->apply_function_to_children_recursuve(
-            [&portOrigin, &portSize, &portOffset](FactoryObject* _Object)
-            {
-                FunctionalBlockPort* port =
-                    dynamic_cast<FunctionalBlockPort*>(_Object);
-
-                // TODO: draw ports here !!!
-                if(port != nullptr)
-                {
-                    ImRect r(portOrigin, portOrigin + portSize);
-                    port->set_geometry(FactoryObjectHierarchy::Geometry(r.GetTL(), r.GetSize() * 0.5f));
-                    port->draw();
-                    portOrigin += portOffset;
-                }
-            }
-            );
-    }
-}
-
-void FunctionalBlock::draw_finish(){}

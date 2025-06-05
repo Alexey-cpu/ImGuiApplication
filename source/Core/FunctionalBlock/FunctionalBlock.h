@@ -612,7 +612,10 @@ public:
     ImU32 m_Color = IM_COL32(
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
-        (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255), 255);
+        (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),
+        255);
+
+    ImRect m_MouseCatcher;
 
     struct MouseEvent
     {

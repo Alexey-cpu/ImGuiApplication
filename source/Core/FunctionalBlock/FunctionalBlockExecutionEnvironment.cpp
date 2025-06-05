@@ -109,6 +109,9 @@ void FunctionalBlockExecutionEnvironment::draw_start()
     ImGui::Begin(get_name().c_str());
     ImGuiIO& io = ImGui::GetIO();
 
+    ImGui::GetWindowDrawList()->ChannelsSplit(FunctionalBlockExecutionEnvironment::DrawChannels::Last);
+    ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Main);
+
     // retrieve geometry
     auto origin = ImGui::GetCursorScreenPos();
     auto size   = ImVec2(std::max(ImGui::GetContentRegionAvail().x, m_GridSize), std::max(ImGui::GetContentRegionAvail().y, m_GridSize));

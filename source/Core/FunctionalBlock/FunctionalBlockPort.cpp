@@ -169,6 +169,10 @@ pugi::xml_node FunctionalBlockPort::pugi_serialize(pugi::xml_node& _Parent)
 
 void FunctionalBlockPort::draw_start()
 {
+    // setup draw channel
+    ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Ports);
+
+    // catch mouse events
 }
 
 void FunctionalBlockPort::draw_process()
@@ -186,11 +190,20 @@ void FunctionalBlockPort::draw_process()
         executionEnvironment->get_item_scene_position(geometry.get_rect().GetTL()),
         executionEnvironment->get_item_scene_position(geometry.get_rect().GetBR()));
 
+
     ImGui::GetWindowDrawList()->AddEllipse(
-        rect.GetTL(),
+        rect.GetCenter(),
         rect.GetSize() * 0.5f,
-        m_Color
-        );
+        m_Color,
+        0.f,
+        ImGui::GetWindowDrawList()->_CalcCircleAutoSegmentCount(ImMax(rect.GetSize().x, rect.GetSize().y) * 0.5f),
+        geometry.get_rect().Contains(executionEnvironment->get_mouse_scene_position()) ||
+               get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f);
+
+    ImGui::GetWindowDrawList()->AddEllipseFilled(
+        rect.GetCenter(),
+        rect.GetSize() * 0.5f,
+        m_Color);
 }
 
 void FunctionalBlockPort::draw_finish()

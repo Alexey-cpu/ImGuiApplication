@@ -32,10 +32,10 @@ public:
 
     // constructors
     FunctionalBlockPort(
-            Type               _PortType,
-            std::string        _Name   = std::string(),
+            Type                    _PortType,
+            std::string             _Name   = std::string(),
             FactoryObjectHierarchy* _Parent = nullptr,
-            std::string        _Object = std::string() );
+            std::string             _Object = std::string() );
 
     // virtual destructor
     virtual ~FunctionalBlockPort();
