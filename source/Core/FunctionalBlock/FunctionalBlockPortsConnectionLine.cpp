@@ -1,8 +1,6 @@
 #include <FunctionalBlockPortsConnectionLine.h>
 #include <FunctionalBlockExecutionEnvironment.h>
 
-#include <QDebug>
-
 // FunctionalBlockPortsConnectionLinePathBuilder
 class FunctionalBlockPortsConnectionLinePathBuilder
 {

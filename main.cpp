@@ -1,4 +1,5 @@
 #include <ImGuiApplication.h>
+#include <FunctionalBlockExecutionEnvironment.h>
 #include <ImGuiApplicationFileSystemDialog.h>
 #include <ImGuiApplicationSettingsFonts.h>
 #include <ImGuiApplicationSettingsColors.h>
@@ -8,10 +9,6 @@
 
 #include <filesystem>
 #include <iostream>
-
-#include <FunctionalBlockExecutionEnvironment.h>
-
-#include <QDebug>
 
 // ImGuiDemoLayer
 class ImGuiDemoLayer : public ImGuiApplication::Layer
