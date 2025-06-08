@@ -575,7 +575,7 @@ public:
     }
 
     // setters
-    void set_rect(const ImRect& _Rect)
+    void set_world_rect(const ImRect& _Rect)
     {
         m_Rect = _Rect;
     }

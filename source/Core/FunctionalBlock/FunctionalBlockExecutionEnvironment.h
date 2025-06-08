@@ -149,8 +149,8 @@ public:
     virtual bool pugi_deserialize(pugi::xml_node& _Node) override;
     virtual void draw_process(const glm::mat4& _Transform) override;
 
-    FunctionalBlock*        m_MouseGrabberBlock = nullptr;
-    FunctionalBlockPort*    m_MouseGrabberPort  = nullptr;
+    FunctionalBlock* m_MouseGrabberBlock = nullptr;
+    FunctionalBlockPort* m_MouseGrabberPort  = nullptr;
 protected:
 
     FactoryObjectHierarchy* m_Selection         = nullptr;

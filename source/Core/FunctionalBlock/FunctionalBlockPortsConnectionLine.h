@@ -62,11 +62,13 @@ public:
 protected:
 
     // info
-    bool                m_Selected = false;
-    bool                m_Focused  = false;
-    std::vector<ImVec2> m_Points   = std::vector<ImVec2>();
-    std::vector<ImVec2> m_TransformedPoints   = std::vector<ImVec2>();
-    bool m_Direction = true;
+    bool                m_Selected    = false;
+    bool                m_Focused     = false;
+    bool                m_Direction   = true;
+    bool                m_Smoothed    = false;
+    ImU32               m_Color       = IM_COL32(0, 255, 0, 255);
+    std::vector<ImVec2> m_WorldPoints = std::vector<ImVec2>();
+    std::vector<ImVec2> m_LocalPoints = std::vector<ImVec2>();
 };
 
 // FunctionalBlockPortsConnectionLineCreator

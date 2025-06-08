@@ -367,7 +367,7 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
                 if(port != nullptr)
                 {
                     auto origin = portOrigin - portSize * 0.5f;
-                    port->set_rect(ImRect(ImRect(origin, origin + portSize)));
+                    port->set_world_rect(ImRect(ImRect(origin, origin + portSize)));
                     port->set_world_transform(_Transform);
                     port->draw(_Transform);
                     portOrigin += portOffset;
@@ -393,7 +393,7 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
                 if(port != nullptr)
                 {
                     auto origin = portOrigin - portSize * 0.5f;
-                    port->set_rect(ImRect(ImRect(origin, origin + portSize)));
+                    port->set_world_rect(ImRect(ImRect(origin, origin + portSize)));
                     port->set_world_transform(_Transform);
                     port->draw(_Transform);
                     portOrigin += portOffset;

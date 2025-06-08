@@ -263,49 +263,6 @@ public:
             generate_normals(source, source->get_orientation()),
             generate_normals(target, target->get_orientation()));
     }
-
-    // static std::vector<ImVec2> insertPoint(QPointF _ScenePosition)
-    // {
-    //     // catch cursor
-    //     if(m_Catcher.CatchSingleExistingPathPoint(_ScenePosition))
-    //         return;
-
-    //     auto  referencePoint                      = this->mapFromScene(_ScenePosition);
-    //     qreal minDistanceToReferencePoint         = __huge__<qreal>();
-    //     int   minDistanceToReferencePointElement  = 0;
-    //     auto  path                                = this->path();
-
-    //     // rebuild path
-    //     for(int i = 0 ; i < path.elementCount(); i++)
-    //     {
-    //         qreal lenght = QLineF(path.elementAt(i), referencePoint).length();
-
-    //         if(lenght <= minDistanceToReferencePoint)
-    //         {
-    //             minDistanceToReferencePoint        = lenght;
-    //             minDistanceToReferencePointElement = i;
-    //         }
-    //     }
-
-    //     minDistanceToReferencePointElement =
-    //         __max__(__min__(minDistanceToReferencePointElement, path.elementCount() - 1), 1);
-
-    //     // generate new path
-    //     QPainterPath newPath(path.elementAt(0));
-
-    //     for(int i = 1; i < minDistanceToReferencePointElement; i++)
-    //         newPath.lineTo(path.elementAt(i));
-    //     newPath.lineTo(referencePoint);
-
-    //     for(int i = minDistanceToReferencePointElement; i < path.elementCount(); i++)
-    //         newPath.lineTo(path.elementAt(i));
-
-    //     this->setPath(newPath);
-
-    //     // catch once again
-    //     if(m_Catcher.CatchSingleExistingPathPoint(_ScenePosition))
-    //         this->update();
-    // }
 };
 
 // FunctionalBlockPortsConnectionLine
@@ -318,75 +275,76 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
         target == nullptr)
         return;
 
-    // automatically build path if it's empty or translate it's pojnts if it's not empty
-    // m_Points = FunctionalBlockPortsConnectionLinePathBuilder::build_rectangular_path(source, target);
-    // m_TransformedPoints = m_Points;
-
-    if(m_Points.empty() || m_TransformedPoints.empty())
+    if(m_WorldPoints.empty() || m_LocalPoints.empty())
     {
-        m_Points = FunctionalBlockPortsConnectionLinePathBuilder::build_rectangular_path(source, target);
-        m_TransformedPoints = m_Points;
+        // compute path points in local coordinates
+        m_LocalPoints = FunctionalBlockPortsConnectionLinePathBuilder::build_rectangular_path(source, target);
 
+        // compute path points in world coordinates
+        auto inverseTransform = glm::inverse(_Transform);
+        m_WorldPoints.resize(m_LocalPoints.size());
+        for (size_t i = 0; i < m_LocalPoints.size(); i++) 
+            m_WorldPoints[i] = FactoryObjectRenderer::transformPoint(m_LocalPoints[i], inverseTransform);
+
+        // identidfy path direction
         ImVec2 sourcePoint = source->get_world_rect(true).GetCenter();
         ImVec2 targetPoint = target->get_world_rect(true).GetCenter();
-
-        auto inverseTransform = glm::inverse(_Transform);
-
-        for (size_t i = 0; i < m_Points.size(); i++)
-        {
-            auto vector = inverseTransform * glm::vec4(m_TransformedPoints[i].x, m_TransformedPoints[i].y, 0.f, 1.f);
-            m_Points[i] = ImVec2(vector.x, vector.y);
-        }
-
-        m_Direction = ImLengthSqr(m_TransformedPoints[0] - sourcePoint) < ImLengthSqr(m_TransformedPoints[0] - targetPoint);
+        m_Direction = ImLengthSqr(m_LocalPoints[0] - sourcePoint) < ImLengthSqr(m_LocalPoints[0] - targetPoint);
     }
     else
     {
-        for (size_t i = 0; i < m_Points.size(); i++)
+        // compute path points in local coordinates
+        for (size_t i = 0; i < m_WorldPoints.size(); i++)
         {
-            auto vector = _Transform * glm::vec4(m_Points[i].x, m_Points[i].y, 0.f, 1.f);
-            m_TransformedPoints[i] = ImVec2(vector.x, vector.y);
+            auto vector = _Transform * glm::vec4(m_WorldPoints[i].x, m_WorldPoints[i].y, 0.f, 1.f);
+            m_LocalPoints[i] = ImVec2(vector.x, vector.y);
         }
 
+        // translate path points
         ImVec2 sourcePoint = source->get_world_rect(true).GetCenter();
         ImVec2 targetPoint = target->get_world_rect(true).GetCenter();
-        ImVec2 translation = (m_Direction ? sourcePoint : targetPoint) - m_TransformedPoints[0];
+        ImVec2 translation = (m_Direction ? sourcePoint : targetPoint) - m_LocalPoints[0];
 
-
-        for(int i = 1; i < m_TransformedPoints.size() - 1; i++) 
-            m_TransformedPoints[i] += translation;
+        for(int i = 1; i < m_LocalPoints.size() - 1; i++) 
+            m_LocalPoints[i] += translation;
 
         if(m_Direction)
         {
-            m_TransformedPoints[0] = sourcePoint;
-            m_TransformedPoints[m_TransformedPoints.size() - 1] = targetPoint;
+            m_LocalPoints[0] = sourcePoint;
+            m_LocalPoints[m_LocalPoints.size() - 1] = targetPoint;
         }
         else
         {
-            m_TransformedPoints[0] = targetPoint;
-            m_TransformedPoints[m_TransformedPoints.size() - 1] = sourcePoint;
+            m_LocalPoints[0] = targetPoint;
+            m_LocalPoints[m_LocalPoints.size() - 1] = sourcePoint;
         }
     }
 
     // catch mouse events
-    bool  is_segment_hovered = false;
-    float max_distance       = 16.f;
+    bool  isHovered   = false;
+    float maxDistance = 16.f;
 
-    for(size_t i = 1; i < m_TransformedPoints.size(); i++)
+    for(size_t i = 1; i < m_LocalPoints.size(); i++)
     {
         // catch mouse
-        ImVec2 mouse_pos_projected_on_segment = ImLineClosestPoint(m_TransformedPoints[i-0], m_TransformedPoints[i-1], ImGui::GetIO().MousePos);
-        ImVec2 mouse_pos_delta_to_segment = mouse_pos_projected_on_segment - ImGui::GetIO().MousePos;
-        is_segment_hovered = (ImLengthSqr(mouse_pos_delta_to_segment) <= max_distance * max_distance);
+        ImVec2 mousePositionProjectedOnSegment = ImLineClosestPoint(m_LocalPoints[i-0], m_LocalPoints[i-1], ImGui::GetIO().MousePos);
+        ImVec2 mousePositionDeltaToSegment     = mousePositionProjectedOnSegment - ImGui::GetIO().MousePos;
+        
+        isHovered = (ImLengthSqr(mousePositionDeltaToSegment) <= maxDistance * maxDistance);
 
-        //highlight the nearest point point
-        if(is_segment_hovered)
+        // highlight the nearest point
+        if(isHovered)
         {
-            for (size_t j = 1; j < m_TransformedPoints.size() - 1; j++)
+            for (size_t j = 1; j < m_LocalPoints.size() - 1; j++)
             {
-                if(ImLengthSqr(m_TransformedPoints[j] - ImGui::GetIO().MousePos) < max_distance * 2.f)
+                if(ImLengthSqr(m_LocalPoints[j] - ImGui::GetIO().MousePos) < maxDistance * 4.f)
                 {
-                    ImGui::GetWindowDrawList()->AddEllipseFilled(m_TransformedPoints[j], ImVec2(16.f, 16.f) * _Transform[0][0], IM_COL32(0, 255, 0, 255));
+                    ImGui::GetWindowDrawList()->AddEllipseFilled(
+                        m_LocalPoints[j], 
+                        ImVec2(16.f, 16.f) * std::max(std::max(_Transform[0][0], _Transform[1][1]), _Transform[2][2]), 
+                        IM_COL32(0, 255, 0, 255)
+                    );
+
                     break;
                 }
             }
@@ -396,101 +354,117 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
     }
 
     // draw path
-    ImGui::GetWindowDrawList()->AddPolyline(
-        &m_TransformedPoints[0],
-        m_TransformedPoints.size(),
-        IM_COL32(0, 255, 0, 255),
-        ImDrawFlags_::ImDrawFlags_None,
-        is_segment_hovered || m_Selected ? 8.f : 1.f
+    if(!m_Smoothed)
+    {
+        ImGui::GetWindowDrawList()->AddPolyline(
+            &m_LocalPoints[0],
+            m_LocalPoints.size(),
+            m_Color,
+            ImDrawFlags_::ImDrawFlags_None,
+            isHovered || m_Selected ? 8.f : 1.f
         );
+    }
+    else
+    {
+            // smooting
+            if(m_LocalPoints.size() >= 4)
+            {
+                ImGui::GetWindowDrawList()->AddBezierCubic(
+                    m_LocalPoints[0],
+                    m_LocalPoints[1],
+                    m_LocalPoints[2],
+                    m_LocalPoints[3],
+                    m_Color,
+                    isHovered || m_Selected ? 8.f : 1.f
+                    );
+            }
+            else if(m_LocalPoints.size() >= 3)
+            {
+                ImGui::GetWindowDrawList()->AddBezierQuadratic(
+                    m_LocalPoints[0],
+                    m_LocalPoints[1],
+                    m_LocalPoints[2],
+                    m_Color,
+                    isHovered || m_Selected ? 8.f : 1.f
+                    );
+            }
+            else
+            {
+                ImGui::GetWindowDrawList()->AddPolyline(
+                    &m_LocalPoints[0],
+                    m_LocalPoints.size(),
+                    m_Color,
+                    ImDrawFlags_::ImDrawFlags_None,
+                    isHovered || m_Selected ? 8.f : 1.f
+                    );
+            }
+    }
 
     // select line
-    // if(is_segment_hovered || m_Focused)
-    // {
-    //     // select line
-    //     if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
-    //         m_Selected = true;
+    if(isHovered || m_Focused)
+    {
+        // select line
+        if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+            m_Selected = true;
 
-    //     // Popup context menu
-    //     if (ImGui::BeginPopupContextItem())
-    //     {
-    //         m_Focused = true;
+        // Popup context menu
+        if (ImGui::BeginPopupContextItem())
+        {
+            m_Focused = true;
 
-    //         if(ImGui::MenuItem("AddPoint"))
-    //         {
-    //         }
-            
-    //         // remove point
-    //         if(ImGui::MenuItem("RemovePoint"))
-    //         {   
-    //         }
+            // line editing  is available only in a non-smoothed mode
+            if(!m_Smoothed)
+            {
+                if(ImGui::MenuItem("AddPoint"))
+                {
+                }
+                
+                // remove point
+                if(ImGui::MenuItem("RemovePoint"))
+                {   
+                }
+            }
 
-    //         // remove self
-    //         if(ImGui::MenuItem("RemoveLine"))
-    //         {
-    //             delete this;
-    //         }
+            // remove self
+            if(ImGui::MenuItem("RemoveLine"))
+            {
+                delete this;
+            }
 
-    //         ImGui::EndPopup();
-    //     }
-    //     else
-    //     {
-    //         m_Focused = false;
-    //     }
-    // }
-    // else
-    // {
-    //     if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
-    //         m_Selected = false;
+            // smooth line
+            if(m_Smoothed)
+            {
+                if(ImGui::MenuItem("SharpLine")) 
+                    m_Smoothed = false;
+            }
+            else
+            {
+                if(ImGui::MenuItem("SmoothLine")) 
+                    m_Smoothed = true;
+            }
 
-    //     if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Escape))
-    //     {
-    //         m_Selected = false;
-    //         m_Focused  = false;
-    //     }
-    // }
+            ImGui::EndPopup();
+        }
+        else
+        {
+            m_Focused = false;
+        }
+    }
+    else
+    {
+        if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+            m_Selected = false;
 
-    // // delete line
-    // if(m_Selected)
-    // {
-    //     if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete))
-    //     {
-    //         // delete self
-    //         delete this;
-    //     }
-    // }
+        if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Escape))
+        {
+            m_Selected = false;
+            m_Focused  = false;
+        }
+    }
 
-    // smooting
-    // if(m_Points.size() >= 4)
-    // {
-    //     ImGui::GetWindowDrawList()->AddBezierCubic(
-    //         m_Points[0],
-    //         m_Points[1],
-    //         m_Points[2],
-    //         m_Points[3],
-    //         IM_COL32(0, 255, 0, 255),
-    //         is_segment_hovered || m_Selected ? 8.f : 1.f
-    //         );
-    // }
-
-    // else if(m_Points.size() >= 3)
-    // {
-    //     ImGui::GetWindowDrawList()->AddBezierQuadratic(
-    //         m_Points[0],
-    //         m_Points[1],
-    //         m_Points[2],
-    //         IM_COL32(0, 255, 0, 255),
-    //         is_segment_hovered || m_Selected ? 8.f : 1.f
-    //         );
-    // }
-    // else
-    // {
-    //     ImGui::GetWindowDrawList()->AddPolyline(
-    //         &m_Points[0],
-    //         m_Points.size(),
-    //         IM_COL32(0, 255, 0, 255),
-    //         ImDrawFlags_::ImDrawFlags_None,
-    //         is_segment_hovered || m_Selected ? 8.f : 1.f
-    //         );
-    // }
+    if(m_Selected)
+    {
+        if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete)) 
+            delete this;
+    }
 }

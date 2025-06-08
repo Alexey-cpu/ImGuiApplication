@@ -125,7 +125,7 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
         }
 
         // setup geometry and transformation matrix
-        set_rect(ImRect(origin, origin + size));
+        set_world_rect(ImRect(origin, origin + size));
         set_world_transform(transform);
 
         // push clipping rect
@@ -256,7 +256,7 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
                 origin = ImVec2(std::roundf(origin.x / m_GridSize) * m_GridSize,
                                 std::roundf(origin.y / m_GridSize) * m_GridSize);
 
-                selectedObject->set_rect(ImRect(origin, origin + size));
+                selectedObject->set_world_rect(ImRect(origin, origin + size));
             }
             );
 

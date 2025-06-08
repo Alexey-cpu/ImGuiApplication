@@ -84,7 +84,7 @@ public:
         // create block
         {
             auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-1", std::string());
-            parent->set_rect(ImRect(ImVec2(512.f, 512.f), ImVec2(512.f, 512.f) + ImVec2(128.f, 128.f)));
+            parent->set_world_rect(ImRect(ImVec2(512.f, 512.f), ImVec2(512.f, 512.f) + ImVec2(128.f, 128.f)));
             //parent->set_geometry(FactoryObjectHierarchy::Geometry(ImVec2(32.f, 32.f), ImVec2(128.f, 128.f)));
 
             // add ports
@@ -98,7 +98,7 @@ public:
         // create block
         {
             auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-2", std::string());
-            parent->set_rect(ImRect(ImVec2(128.f, 128.f), ImVec2(128, 128.f) + ImVec2(128.f, 128.f)));
+            parent->set_world_rect(ImRect(ImVec2(128.f, 128.f), ImVec2(128, 128.f) + ImVec2(128.f, 128.f)));
 
             // add ports
             for(int i = 0; i < 4; i++)
@@ -107,41 +107,38 @@ public:
             for(int i = 0; i < 2; i++)
                 parent->add_output<double>("O-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
         }
-        /*
-        ImVec2 init = ImVec2(0.f, 0.f);
 
-        int k  = 0;
-        int N  = 1e5;
-        int dN = std::max(0.01f * (float)N, 1.f);
+        // ImVec2 init = ImVec2(0.f, 0.f);
 
-        for(int i =0; i < N; i++)
-        {
-            for(int j = 0; j < dN; j++)
-            {
-                auto item = new FunctionalBlock(m_Environment.get(), "SomeBlock-1");
+        // int k  = 0;
+        // int N  = 1e5;
+        // int dN = std::max(0.01f * (float)N, 1.f);
 
-                item->set_rect(ImRect(init, init + ImVec2(128.f, 128.f)));
+        // for(int i =0; i < N; i++)
+        // {
+        //     for(int j = 0; j < dN; j++)
+        //     {
+        //         auto item = new FunctionalBlock(m_Environment.get(), "SomeBlock-1");
 
-                // add ports
-                for(int i = 0; i < 4; i++)
-                    item->add_input<double>("In-" + std::to_string(i));
+        //         item->set_rect(ImRect(init, init + ImVec2(128.f, 128.f)));
 
-                for(int i = 0; i < 2; i++)
-                    item->add_output<double>("O-" + std::to_string(i));
+        //         // add ports
+        //         for(int i = 0; i < 4; i++)
+        //             item->add_input<double>("In-" + std::to_string(i));
 
-                init.x = (j + 1) * 256;
+        //         for(int i = 0; i < 2; i++)
+        //             item->add_output<double>("O-" + std::to_string(i));
 
-                i++;
-            }
+        //         init.x = (j + 1) * 256;
 
-            init.y = (k + 1) * 256;
-            init.x = 0.f;
+        //         i++;
+        //     }
 
-            k++;
-        }
-        */
+        //     init.y = (k + 1) * 256;
+        //     init.x = 0.f;
 
-        //qDebug() << "m_Environment->count_nodes() " << m_Environment->count_nodes();
+        //     k++;
+        // }
     }
 
     // virtual destructor
