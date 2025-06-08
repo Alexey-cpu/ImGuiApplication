@@ -319,36 +319,52 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
         return;
 
     // automatically build path if it's empty or translate it's pojnts if it's not empty
-    if(m_Points.empty())
+    // m_Points = FunctionalBlockPortsConnectionLinePathBuilder::build_rectangular_path(source, target);
+    // m_TransformedPoints = m_Points;
+
+    if(m_Points.empty() || m_TransformedPoints.empty())
     {
         m_Points = FunctionalBlockPortsConnectionLinePathBuilder::build_rectangular_path(source, target);
-    }
-    else
-    {
-        // apply transform to points
-        // for(size_t i = 0; i < m_Points.size(); i++)
-        // {
-        //     auto vector = _Transform * glm::vec4(m_Points[i].x, m_Points[i].y, 0.f, 1.f);
-        //     m_Points[i] = ImVec2(vector.x, vector.y);
-        // }
+        m_TransformedPoints = m_Points;
 
         ImVec2 sourcePoint = source->get_world_rect(true).GetCenter();
         ImVec2 targetPoint = target->get_world_rect(true).GetCenter();
-        ImVec2 translation = (ImLengthSqr(m_Points[0] - sourcePoint) < ImLengthSqr(m_Points[0] - targetPoint) ? sourcePoint: targetPoint) - m_Points.front();
 
-        for(int i = 1; i < m_Points.size() - 1; i++) 
-            m_Points[i] += translation;
+        auto inverseTransform = glm::inverse(_Transform);
 
-        if(ImLengthSqr(m_Points.front() - sourcePoint) <
-            ImLengthSqr(m_Points.back() - sourcePoint))
+        for (size_t i = 0; i < m_Points.size(); i++)
         {
-            m_Points[0] = sourcePoint;
-            m_Points[m_Points.size() - 1] = targetPoint;
+            auto vector = inverseTransform * glm::vec4(m_TransformedPoints[i].x, m_TransformedPoints[i].y, 0.f, 1.f);
+            m_Points[i] = ImVec2(vector.x, vector.y);
+        }
+
+        m_Direction = ImLengthSqr(m_TransformedPoints[0] - sourcePoint) < ImLengthSqr(m_TransformedPoints[0] - targetPoint);
+    }
+    else
+    {
+        for (size_t i = 0; i < m_Points.size(); i++)
+        {
+            auto vector = _Transform * glm::vec4(m_Points[i].x, m_Points[i].y, 0.f, 1.f);
+            m_TransformedPoints[i] = ImVec2(vector.x, vector.y);
+        }
+
+        ImVec2 sourcePoint = source->get_world_rect(true).GetCenter();
+        ImVec2 targetPoint = target->get_world_rect(true).GetCenter();
+        ImVec2 translation = (m_Direction ? sourcePoint : targetPoint) - m_TransformedPoints[0];
+
+
+        for(int i = 1; i < m_TransformedPoints.size() - 1; i++) 
+            m_TransformedPoints[i] += translation;
+
+        if(m_Direction)
+        {
+            m_TransformedPoints[0] = sourcePoint;
+            m_TransformedPoints[m_TransformedPoints.size() - 1] = targetPoint;
         }
         else
         {
-            m_Points[0] = targetPoint;
-            m_Points[m_Points.size() - 1] = sourcePoint;
+            m_TransformedPoints[0] = targetPoint;
+            m_TransformedPoints[m_TransformedPoints.size() - 1] = sourcePoint;
         }
     }
 
@@ -356,94 +372,93 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
     bool  is_segment_hovered = false;
     float max_distance       = 16.f;
 
-    for(size_t i = 1; i < m_Points.size(); i++)
+    for(size_t i = 1; i < m_TransformedPoints.size(); i++)
     {
         // catch mouse
-        ImVec2 mouse_pos_projected_on_segment = ImLineClosestPoint(m_Points[i-0], m_Points[i-1], ImGui::GetIO().MousePos);
+        ImVec2 mouse_pos_projected_on_segment = ImLineClosestPoint(m_TransformedPoints[i-0], m_TransformedPoints[i-1], ImGui::GetIO().MousePos);
         ImVec2 mouse_pos_delta_to_segment = mouse_pos_projected_on_segment - ImGui::GetIO().MousePos;
         is_segment_hovered = (ImLengthSqr(mouse_pos_delta_to_segment) <= max_distance * max_distance);
 
         if(is_segment_hovered)
         {
             // highlight the nearest point point
-            for (size_t j = 1; j < m_Points.size() - 1; j++)
-            {
-                if(ImLengthSqr(m_Points[j] - ImGui::GetIO().MousePos) < max_distance)
-                {
-                    ImGui::GetWindowDrawList()->AddEllipse(m_Points[j], ImVec2(16.f, 16.f), IM_COL32(0, 255, 0, 255));
-                    break;
-                }
-            }
+            // for (size_t j = 1; j < m_TransformedPoints.size() - 1; j++)
+            // {
+            //     if(ImLengthSqr(m_TransformedPoints[j] - ImGui::GetIO().MousePos) < max_distance * 2.f)
+            //     {
+            //         ImGui::GetWindowDrawList()->AddEllipseFilled(m_TransformedPoints[j], ImVec2(16.f, 16.f), IM_COL32(0, 255, 0, 255));
+            //         break;
+            //     }
+            // }
             
-
             break;
-        }
-    }
-
-    // select line
-    if(is_segment_hovered || m_Focused)
-    {
-        // select line
-        if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
-            m_Selected = true;
-
-        // Popup context menu
-        if (ImGui::BeginPopupContextItem())
-        {
-            m_Focused = true;
-
-            if(ImGui::MenuItem("AddPoint"))
-            {
-            }
-            
-            // remove point
-            if(ImGui::MenuItem("RemovePoint"))
-            {   
-            }
-
-            // remove self
-            if(ImGui::MenuItem("RemoveLine"))
-            {
-                delete this;
-            }
-
-            ImGui::EndPopup();
-        }
-        else
-        {
-            m_Focused = false;
-        }
-    }
-    else
-    {
-        if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
-            m_Selected = false;
-
-        if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Escape))
-        {
-            m_Selected = false;
-            m_Focused = false;
-        }
-    }
-
-    // delete line
-    if(m_Selected)
-    {
-        if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete))
-        {
-            // delete self
-            delete this;
         }
     }
 
     // draw path
     ImGui::GetWindowDrawList()->AddPolyline(
-        &m_Points[0],
-        m_Points.size(),
+        &m_TransformedPoints[0],
+        m_TransformedPoints.size(),
         IM_COL32(0, 255, 0, 255),
         ImDrawFlags_::ImDrawFlags_None,
         is_segment_hovered || m_Selected ? 8.f : 1.f
         );
+
+    // select line
+    // if(is_segment_hovered || m_Focused)
+    // {
+    //     // select line
+    //     if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+    //         m_Selected = true;
+
+    //     // Popup context menu
+    //     if (ImGui::BeginPopupContextItem())
+    //     {
+    //         m_Focused = true;
+
+    //         if(ImGui::MenuItem("AddPoint"))
+    //         {
+    //         }
+            
+    //         // remove point
+    //         if(ImGui::MenuItem("RemovePoint"))
+    //         {   
+    //         }
+
+    //         // remove self
+    //         if(ImGui::MenuItem("RemoveLine"))
+    //         {
+    //             delete this;
+    //         }
+
+    //         ImGui::EndPopup();
+    //     }
+    //     else
+    //     {
+    //         m_Focused = false;
+    //     }
+    // }
+    // else
+    // {
+    //     if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+    //         m_Selected = false;
+
+    //     if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Escape))
+    //     {
+    //         m_Selected = false;
+    //         m_Focused  = false;
+    //     }
+    // }
+
+    // // delete line
+    // if(m_Selected)
+    // {
+    //     if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete))
+    //     {
+    //         // delete self
+    //         delete this;
+    //     }
+    // }
 
     // smooting
     // if(m_Points.size() >= 4)

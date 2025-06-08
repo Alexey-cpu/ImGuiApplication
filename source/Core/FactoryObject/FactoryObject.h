@@ -598,6 +598,12 @@ public:
         draw_process(_Transform);
     }
 
+    static ImVec2 transformPoint(const ImVec2& _Point, const glm::mat4& _Transform)
+    {
+        auto point = _Transform * glm::vec4(_Point.x, _Point.y, 0.f, 1.f);
+        return ImVec2(point.x, point.y);
+    }
+
 protected:
     ImRect    m_Rect           = ImRect(0.f, 0.f, 32.f, 32.f);
     glm::mat4 m_WorldTransform = glm::mat4(1.f);
