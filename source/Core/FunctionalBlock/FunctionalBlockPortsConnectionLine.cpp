@@ -386,9 +386,7 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
             {
                 if(ImLengthSqr(m_TransformedPoints[j] - ImGui::GetIO().MousePos) < max_distance * 2.f)
                 {
-                    ImRect rect = ImRect(m_TransformedPoints[j], m_TransformedPoints[j] + ImVec2(16.f, 16.f));
-
-                    ImGui::GetWindowDrawList()->AddEllipseFilled(m_TransformedPoints[j], rect.GetSize(), IM_COL32(0, 255, 0, 255));
+                    ImGui::GetWindowDrawList()->AddEllipseFilled(m_TransformedPoints[j], ImVec2(16.f, 16.f) * _Transform[0][0], IM_COL32(0, 255, 0, 255));
                     break;
                 }
             }
