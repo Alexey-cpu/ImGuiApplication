@@ -3,6 +3,7 @@
 
 #include "absl/numeric/int128.h"
 #include "Utils.h"
+#include <bit>
 
 #ifndef ABSL_NUMERIC_INT128_H_
 

@@ -551,21 +551,27 @@ public:
     virtual ~FactoryObjectRenderer(){}
 
     // getters
-    ImRect get_rect(bool _Transformed = false) const
+    ImRect get_world_rect(bool _Transformed = false) const
     {
         if(_Transformed)
         {
-            auto topLeft     = m_Transform * glm::vec4(m_Rect.GetTL().x, m_Rect.GetTL().y, 0.f, 1.f);
-            auto bottomRight = m_Transform * glm::vec4(m_Rect.GetBR().x, m_Rect.GetBR().y, 0.f, 1.f);
+            auto transform   = m_WorldTransform * m_LocalTransform;
+            auto topLeft     = transform * glm::vec4(m_Rect.GetTL().x, m_Rect.GetTL().y, 0.f, 1.f);
+            auto bottomRight = transform * glm::vec4(m_Rect.GetBR().x, m_Rect.GetBR().y, 0.f, 1.f);
             return ImRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
         }
 
         return m_Rect;
     }
 
-    glm::mat4 get_transform() const
+    glm::mat4 get_world_transform() const
     {
-        return m_Transform;
+        return m_WorldTransform;
+    }
+
+    glm::mat4 get_local_transform() const
+    {
+        return m_LocalTransform;
     }
 
     // setters
@@ -574,9 +580,14 @@ public:
         m_Rect = _Rect;
     }
 
-    void set_transformation(const glm::mat4& _Transform)
+    void set_world_transform(const glm::mat4& _Transform)
     {
-        m_Transform = _Transform;
+        m_WorldTransform = _Transform;
+    }
+
+    void set_local_transform(const glm::mat4& _Transform)
+    {
+        m_LocalTransform = _Transform;
     }
 
     // API
@@ -588,8 +599,9 @@ public:
     }
 
 protected:
-    ImRect    m_Rect      = ImRect(0.f, 0.f, 32.f, 32.f);
-    glm::mat4 m_Transform = glm::mat4(1.f);
+    ImRect    m_Rect           = ImRect(0.f, 0.f, 32.f, 32.f);
+    glm::mat4 m_WorldTransform = glm::mat4(1.f);
+    glm::mat4 m_LocalTransform = glm::mat4(1.f);
 };
 
 // FactoryObjectUUIDChecker

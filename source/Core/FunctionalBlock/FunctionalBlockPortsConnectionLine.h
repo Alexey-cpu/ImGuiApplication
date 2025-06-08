@@ -61,8 +61,10 @@ public:
 
 protected:
 
-    bool m_Selected = false;
-    bool m_Focused  = false;
+    // info
+    bool                m_Selected = false;
+    bool                m_Focused  = false;
+    std::vector<ImVec2> m_Points   = std::vector<ImVec2>();
 };
 
 // FunctionalBlockPortsConnectionLineCreator

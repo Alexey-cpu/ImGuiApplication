@@ -16,31 +16,31 @@ public:
         std::vector<ImVec4> normals;
 
         ImVec4 left = ImVec4(
-            _To->get_rect(true).GetCenter().x,
-            _To->get_rect(true).GetCenter().y,
-            (_To->get_rect(true).GetCenter() - ImVec2(_To->get_rect(true).GetSize().x, 0.0)).x,
-            (_To->get_rect(true).GetCenter() - ImVec2(_To->get_rect(true).GetSize().x, 0.0)).y
+            _To->get_world_rect(true).GetCenter().x,
+            _To->get_world_rect(true).GetCenter().y,
+            (_To->get_world_rect(true).GetCenter() - ImVec2(_To->get_world_rect(true).GetSize().x, 0.0)).x,
+            (_To->get_world_rect(true).GetCenter() - ImVec2(_To->get_world_rect(true).GetSize().x, 0.0)).y
             );
 
         ImVec4 right = ImVec4(
-            _To->get_rect(true).GetCenter().x,
-            _To->get_rect(true).GetCenter().y,
-            (_To->get_rect(true).GetCenter() + ImVec2(_To->get_rect(true).GetSize().x, 0.)).x,
-            (_To->get_rect(true).GetCenter() + ImVec2(_To->get_rect(true).GetSize().x, 0.)).y
+            _To->get_world_rect(true).GetCenter().x,
+            _To->get_world_rect(true).GetCenter().y,
+            (_To->get_world_rect(true).GetCenter() + ImVec2(_To->get_world_rect(true).GetSize().x, 0.)).x,
+            (_To->get_world_rect(true).GetCenter() + ImVec2(_To->get_world_rect(true).GetSize().x, 0.)).y
             );
 
         ImVec4 top = ImVec4(
-            _To->get_rect(true).GetCenter().x,
-            _To->get_rect(true).GetCenter().y,
-            (_To->get_rect(true).GetCenter() - ImVec2(0.0, _To->get_rect(true).GetSize().y)).x,
-            (_To->get_rect(true).GetCenter() - ImVec2(0.0, _To->get_rect(true).GetSize().y)).y
+            _To->get_world_rect(true).GetCenter().x,
+            _To->get_world_rect(true).GetCenter().y,
+            (_To->get_world_rect(true).GetCenter() - ImVec2(0.0, _To->get_world_rect(true).GetSize().y)).x,
+            (_To->get_world_rect(true).GetCenter() - ImVec2(0.0, _To->get_world_rect(true).GetSize().y)).y
             );
 
         ImVec4 bottom = ImVec4(
-            _To->get_rect(true).GetCenter().x,
-            _To->get_rect(true).GetCenter().y,
-            (_To->get_rect(true).GetCenter() + ImVec2(0.0, _To->get_rect(true).GetSize().y)).x,
-            (_To->get_rect(true).GetCenter() + ImVec2(0.0, _To->get_rect(true).GetSize().y)).y
+            _To->get_world_rect(true).GetCenter().x,
+            _To->get_world_rect(true).GetCenter().y,
+            (_To->get_world_rect(true).GetCenter() + ImVec2(0.0, _To->get_world_rect(true).GetSize().y)).x,
+            (_To->get_world_rect(true).GetCenter() + ImVec2(0.0, _To->get_world_rect(true).GetSize().y)).y
             );
 
 
@@ -258,12 +258,54 @@ public:
         FunctionalBlockPort* target)
     {
         return compute_path(
-            source->get_rect(true).GetCenter(),
-            target->get_rect(true).GetCenter(),
+            source->get_world_rect(true).GetCenter(),
+            target->get_world_rect(true).GetCenter(),
             generate_normals(source, source->get_orientation()),
             generate_normals(target, target->get_orientation()));
     }
 
+    // static std::vector<ImVec2> insertPoint(QPointF _ScenePosition)
+    // {
+    //     // catch cursor
+    //     if(m_Catcher.CatchSingleExistingPathPoint(_ScenePosition))
+    //         return;
+
+    //     auto  referencePoint                      = this->mapFromScene(_ScenePosition);
+    //     qreal minDistanceToReferencePoint         = __huge__<qreal>();
+    //     int   minDistanceToReferencePointElement  = 0;
+    //     auto  path                                = this->path();
+
+    //     // rebuild path
+    //     for(int i = 0 ; i < path.elementCount(); i++)
+    //     {
+    //         qreal lenght = QLineF(path.elementAt(i), referencePoint).length();
+
+    //         if(lenght <= minDistanceToReferencePoint)
+    //         {
+    //             minDistanceToReferencePoint        = lenght;
+    //             minDistanceToReferencePointElement = i;
+    //         }
+    //     }
+
+    //     minDistanceToReferencePointElement =
+    //         __max__(__min__(minDistanceToReferencePointElement, path.elementCount() - 1), 1);
+
+    //     // generate new path
+    //     QPainterPath newPath(path.elementAt(0));
+
+    //     for(int i = 1; i < minDistanceToReferencePointElement; i++)
+    //         newPath.lineTo(path.elementAt(i));
+    //     newPath.lineTo(referencePoint);
+
+    //     for(int i = minDistanceToReferencePointElement; i < path.elementCount(); i++)
+    //         newPath.lineTo(path.elementAt(i));
+
+    //     this->setPath(newPath);
+
+    //     // catch once again
+    //     if(m_Catcher.CatchSingleExistingPathPoint(_ScenePosition))
+    //         this->update();
+    // }
 };
 
 // FunctionalBlockPortsConnectionLine
@@ -276,23 +318,66 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
         target == nullptr)
         return;
 
-    // compute path
-    auto points = FunctionalBlockPortsConnectionLinePathBuilder::build_rectangular_path(source, target);
+    // automatically build path if it's empty or translate it's pojnts if it's not empty
+    if(m_Points.empty())
+    {
+        m_Points = FunctionalBlockPortsConnectionLinePathBuilder::build_rectangular_path(source, target);
+    }
+    else
+    {
+        // apply transform to points
+        // for(size_t i = 0; i < m_Points.size(); i++)
+        // {
+        //     auto vector = _Transform * glm::vec4(m_Points[i].x, m_Points[i].y, 0.f, 1.f);
+        //     m_Points[i] = ImVec2(vector.x, vector.y);
+        // }
+
+        ImVec2 sourcePoint = source->get_world_rect(true).GetCenter();
+        ImVec2 targetPoint = target->get_world_rect(true).GetCenter();
+        ImVec2 translation = (ImLengthSqr(m_Points[0] - sourcePoint) < ImLengthSqr(m_Points[0] - targetPoint) ? sourcePoint: targetPoint) - m_Points.front();
+
+        for(int i = 1; i < m_Points.size() - 1; i++) 
+            m_Points[i] += translation;
+
+        if(ImLengthSqr(m_Points.front() - sourcePoint) <
+            ImLengthSqr(m_Points.back() - sourcePoint))
+        {
+            m_Points[0] = sourcePoint;
+            m_Points[m_Points.size() - 1] = targetPoint;
+        }
+        else
+        {
+            m_Points[0] = targetPoint;
+            m_Points[m_Points.size() - 1] = sourcePoint;
+        }
+    }
 
     // catch mouse events
-    float max_distance       = 16.f;
     bool  is_segment_hovered = false;
+    float max_distance       = 16.f;
 
-    for(size_t i = 1; i < points.size(); i++)
+    for(size_t i = 1; i < m_Points.size(); i++)
     {
         // catch mouse
-        auto segment_a = points[i-0];
-        auto segment_b = points[i-1];
-        ImVec2 mouse_pos_projected_on_segment = ImLineClosestPoint(segment_a, segment_b, ImGui::GetIO().MousePos);
+        ImVec2 mouse_pos_projected_on_segment = ImLineClosestPoint(m_Points[i-0], m_Points[i-1], ImGui::GetIO().MousePos);
         ImVec2 mouse_pos_delta_to_segment = mouse_pos_projected_on_segment - ImGui::GetIO().MousePos;
-        is_segment_hovered = (ImLengthSqr(mouse_pos_delta_to_segment ) <= max_distance * max_distance);
+        is_segment_hovered = (ImLengthSqr(mouse_pos_delta_to_segment) <= max_distance * max_distance);
 
-        if(is_segment_hovered) break;
+        if(is_segment_hovered)
+        {
+            // highlight the nearest point point
+            for (size_t j = 1; j < m_Points.size() - 1; j++)
+            {
+                if(ImLengthSqr(m_Points[j] - ImGui::GetIO().MousePos) < max_distance)
+                {
+                    ImGui::GetWindowDrawList()->AddEllipse(m_Points[j], ImVec2(16.f, 16.f), IM_COL32(0, 255, 0, 255));
+                    break;
+                }
+            }
+            
+
+            break;
+        }
     }
 
     // select line
@@ -307,10 +392,20 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
         {
             m_Focused = true;
 
-            if(ImGui::MenuItem("Rename")){}
-            if(ImGui::MenuItem("Copy")){}
-            if(ImGui::MenuItem("Paste")){}
-            if(ImGui::MenuItem("Remove")){}
+            if(ImGui::MenuItem("AddPoint"))
+            {
+            }
+            
+            // remove point
+            if(ImGui::MenuItem("RemovePoint"))
+            {   
+            }
+
+            // remove self
+            if(ImGui::MenuItem("RemoveLine"))
+            {
+                delete this;
+            }
 
             ImGui::EndPopup();
         }
@@ -343,45 +438,44 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
 
     // draw path
     ImGui::GetWindowDrawList()->AddPolyline(
-        &points[0],
-        points.size(),
+        &m_Points[0],
+        m_Points.size(),
         IM_COL32(0, 255, 0, 255),
         ImDrawFlags_::ImDrawFlags_None,
         is_segment_hovered || m_Selected ? 8.f : 1.f
         );
 
-    /*
-    if(points.size() >= 4)
-    {
-        ImGui::GetWindowDrawList()->AddBezierCubic(
-            points[0],
-            points[1],
-            points[2],
-            points[3],
-            IM_COL32(0, 255, 0, 255),
-            is_segment_hovered || m_Selected ? 8.f : 1.f
-            );
-    }
+    // smooting
+    // if(m_Points.size() >= 4)
+    // {
+    //     ImGui::GetWindowDrawList()->AddBezierCubic(
+    //         m_Points[0],
+    //         m_Points[1],
+    //         m_Points[2],
+    //         m_Points[3],
+    //         IM_COL32(0, 255, 0, 255),
+    //         is_segment_hovered || m_Selected ? 8.f : 1.f
+    //         );
+    // }
 
-    else if(points.size() >= 3)
-    {
-        ImGui::GetWindowDrawList()->AddBezierQuadratic(
-            points[0],
-            points[1],
-            points[2],
-            IM_COL32(0, 255, 0, 255),
-            is_segment_hovered || m_Selected ? 8.f : 1.f
-            );
-    }
-    else
-    {
-        ImGui::GetWindowDrawList()->AddPolyline(
-            &points[0],
-            points.size(),
-            IM_COL32(0, 255, 0, 255),
-            ImDrawFlags_::ImDrawFlags_None,
-            is_segment_hovered || m_Selected ? 8.f : 1.f
-            );
-    }
-    */
+    // else if(m_Points.size() >= 3)
+    // {
+    //     ImGui::GetWindowDrawList()->AddBezierQuadratic(
+    //         m_Points[0],
+    //         m_Points[1],
+    //         m_Points[2],
+    //         IM_COL32(0, 255, 0, 255),
+    //         is_segment_hovered || m_Selected ? 8.f : 1.f
+    //         );
+    // }
+    // else
+    // {
+    //     ImGui::GetWindowDrawList()->AddPolyline(
+    //         &m_Points[0],
+    //         m_Points.size(),
+    //         IM_COL32(0, 255, 0, 255),
+    //         ImDrawFlags_::ImDrawFlags_None,
+    //         is_segment_hovered || m_Selected ? 8.f : 1.f
+    //         );
+    // }
 }

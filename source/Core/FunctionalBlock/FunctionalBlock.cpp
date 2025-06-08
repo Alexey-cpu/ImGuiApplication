@@ -334,26 +334,26 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
 
 
     // draw self
-    set_transformation(_Transform);
+    set_world_transform(_Transform);
 
     ImGui::GetWindowDrawList()->AddRect(
-        get_rect(true).GetTL(),
-        get_rect(true).GetBR(),
+        get_world_rect(true).GetTL(),
+        get_world_rect(true).GetBR(),
         m_Color,
         0.f,
         ImDrawFlags_::ImDrawFlags_None,
-        ImRect(get_rect(true).GetTL() + get_rect().GetSize() * 0.1f,
-               get_rect(true).GetBR() - get_rect().GetSize() * 0.1f).Contains(ImGui::GetIO().MousePos) ||
+        ImRect(get_world_rect(true).GetTL() + get_world_rect().GetSize() * 0.1f,
+               get_world_rect(true).GetBR() - get_world_rect().GetSize() * 0.1f).Contains(ImGui::GetIO().MousePos) ||
                 get_parent<FunctionalBlockExecutionEnvironment::SelectionNode>() ? 16.f : 4.f
         );
 
     // draw ports
-    auto inputsSpace  = get_rect().GetSize() / get_inputs_root()->get_children().size();
-    auto outputsSpace = get_rect().GetSize() / get_outputs_root()->get_children().size();
+    auto inputsSpace  = get_world_rect().GetSize() / get_inputs_root()->get_children().size();
+    auto outputsSpace = get_world_rect().GetSize() / get_outputs_root()->get_children().size();
     auto portSize     = ImVec2(std::min(inputsSpace.x, outputsSpace.x), std::min(inputsSpace.y, outputsSpace.y));
 
     {
-        auto portOrigin  = get_rect().GetTL() + ImVec2(0.f, inputsSpace.y / 2.0);
+        auto portOrigin  = get_world_rect().GetTL() + ImVec2(0.f, inputsSpace.y / 2.0);
         auto portOffset  = ImVec2(0.f, portSize.y);
         auto drawChannel = 0;
 
@@ -368,7 +368,7 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
                 {
                     auto origin = portOrigin - portSize * 0.5f;
                     port->set_rect(ImRect(ImRect(origin, origin + portSize)));
-                    port->set_transformation(_Transform);
+                    port->set_world_transform(_Transform);
                     port->draw(_Transform);
                     portOrigin += portOffset;
                     drawChannel++;
@@ -379,7 +379,7 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
 
     // draw outputs
     {
-        auto portOrigin = get_rect().GetTR() + ImVec2(0.f, portSize.y / 2.0);
+        auto portOrigin = get_world_rect().GetTR() + ImVec2(0.f, portSize.y / 2.0);
         auto portOffset = ImVec2(0.f, portSize.y);
         auto drawChannel = 0;
 
@@ -394,7 +394,7 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
                 {
                     auto origin = portOrigin - portSize * 0.5f;
                     port->set_rect(ImRect(ImRect(origin, origin + portSize)));
-                    port->set_transformation(_Transform);
+                    port->set_world_transform(_Transform);
                     port->draw(_Transform);
                     portOrigin += portOffset;
                     drawChannel++;

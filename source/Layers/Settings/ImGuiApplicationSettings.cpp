@@ -10,6 +10,8 @@ Settings::Settings(const std::string&                       _Title,
 {
     m_Path           = _Path;
     m_RenderingQueue = _Settings;
+    
+    m_Path.make_preferred();
 
     if(!m_RenderingQueue.empty())
         m_CurrentLayer = m_RenderingQueue.front();
@@ -25,21 +27,25 @@ void Settings::OnClose()
 void Settings::OnAwake()
 {
     // look for .xml settings file
-    for(const auto& directory :
-         std::filesystem::recursive_directory_iterator(m_Path, std::filesystem::directory_options::skip_permission_denied))
+    try
     {
-        if(directory.is_directory())
-            continue;
-
-        if(directory.path().extension() == ".xml" &&
-            pugi::as_utf8(directory.path().filename().stem().wstring()) == "Settings")
+        for(const auto& directory :
+            std::filesystem::recursive_directory_iterator(m_Path, std::filesystem::directory_options::skip_permission_denied))
         {
-            std::cout << "Settings::OnAwake() " << directory.path().string() << "\n";
+            if(directory.is_directory())
+                continue;
 
-            pugi::xml_document document;
-            document.load_file(pugi::as_utf8(directory.path().wstring()).c_str());
-            Deserialize(document);
+            if(directory.path().extension() == ".xml" &&
+                pugi::as_utf8(directory.path().filename().stem().wstring()) == "Settings")
+            {
+                pugi::xml_document document;
+                document.load_file(pugi::as_utf8(directory.path().wstring()).c_str());
+                Deserialize(document);
+            }
         }
+    }
+    catch(const std::exception& e)
+    {
     }
 }
 

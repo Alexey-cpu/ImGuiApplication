@@ -171,10 +171,10 @@ void FunctionalBlockPort::draw_process(const glm::mat4& _Transform)
 {
     ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Ports);
 
-    set_transformation(_Transform);
+    set_world_transform(_Transform);
 
     // draw self
-    auto rect = ImRect(get_rect(true).GetTL(), get_rect(true).GetBR());
+    auto rect = ImRect(get_world_rect(true).GetTL(), get_world_rect(true).GetBR());
 
     ImGui::GetWindowDrawList()->AddEllipse(
         rect.GetCenter(),
@@ -194,12 +194,14 @@ void FunctionalBlockPort::draw_process(const glm::mat4& _Transform)
     // draw connection lines
     if(get_port_type() == FunctionalBlockPort::Type::OUTPUT)
     {
-        for(auto adjacentEdge : retrieve_adjacent_edges())
+        auto adjacentEdges = retrieve_adjacent_edges();
+
+        for(auto adjacentEdge : adjacentEdges)
         {
             auto edge = dynamic_cast<FunctionalBlockPortsConnectionLine*>(adjacentEdge);
 
-            if(edge != nullptr)
-                edge->draw();
+            if(edge != nullptr)  
+                edge->draw(_Transform);
         }
     }
 
@@ -208,7 +210,7 @@ void FunctionalBlockPort::draw_process(const glm::mat4& _Transform)
         get_parent_recursive<FunctionalBlockExecutionEnvironment>();
 
     if(executionEnvironment == nullptr ||
-        !ImRect(get_rect(true).GetTL(), get_rect(true).GetBR()).Contains(ImGui::GetIO().MousePos))
+        !ImRect(get_world_rect(true).GetTL(), get_world_rect(true).GetBR()).Contains(ImGui::GetIO().MousePos))
         return;
 
     if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left) &&

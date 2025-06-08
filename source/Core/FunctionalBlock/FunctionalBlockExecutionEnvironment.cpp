@@ -108,7 +108,7 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
         ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Main);
 
         // compute transformation matrix
-        glm::mat4 transform = get_transform();
+        glm::mat4 transform = get_world_transform();
 
         // drag
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
@@ -126,19 +126,19 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
 
         // setup geometry and transformation matrix
         set_rect(ImRect(origin, origin + size));
-        set_transformation(transform);
+        set_world_transform(transform);
 
         // push clipping rect
-        drawList->PushClipRect(get_rect().GetTL(), get_rect().GetBR(), true);
+        drawList->PushClipRect(get_world_rect().GetTL(), get_world_rect().GetBR(), true);
 
         // draw background
-        drawList->AddRectFilled(get_rect().GetTL(), get_rect().GetBR(), IM_COL32(64, 64, 64, 255));
-        drawList->AddRect(get_rect().GetTL(), get_rect().GetBR(), IM_COL32(0, 255, 0, 255));
+        drawList->AddRectFilled(get_world_rect().GetTL(), get_world_rect().GetBR(), IM_COL32(64, 64, 64, 255));
+        drawList->AddRect(get_world_rect().GetTL(), get_world_rect().GetBR(), IM_COL32(0, 255, 0, 255));
     }
 
     // draw grid and mouse tacking cursor
-    auto rect      = get_rect();
-    auto transform = get_transform();
+    auto rect      = get_world_rect();
+    auto transform = get_world_transform();
     auto offset    = ImVec2(transform[3][0], transform[3][1]);
     auto scale     = std::max(std::max(transform[0][0], transform[1][1]), transform[2][2]);
     auto gridSize  = m_GridSize * scale;
@@ -146,22 +146,25 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
     for (float x = fmodf(offset.x, gridSize); x < rect.GetSize().x; x += gridSize)
     {
         drawList->AddLine(
-            ImVec2(get_rect().GetTL().x + x, get_rect().GetTL().y),
-            ImVec2(get_rect().GetTL().x + x, get_rect().GetBR().y),
+            ImVec2(get_world_rect().GetTL().x + x, get_world_rect().GetTL().y),
+            ImVec2(get_world_rect().GetTL().x + x, get_world_rect().GetBR().y),
             IM_COL32(200, 200, 200, 40));
     }
 
     for (float y = fmodf(offset.y, gridSize); y < rect.GetSize().y; y += gridSize)
     {
         drawList->AddLine(
-            ImVec2(get_rect().GetTL().x, get_rect().GetTL().y + y),
-            ImVec2(get_rect().GetTR().x, get_rect().GetTL().y + y),
+            ImVec2(get_world_rect().GetTL().x, get_world_rect().GetTL().y + y),
+            ImVec2(get_world_rect().GetTR().x, get_world_rect().GetTL().y + y),
             IM_COL32(200, 200, 200, 40));
     }
 
-    //
-    glm::mat4 mouseTransform = glm::mat4(1.f);
-    ImVec2    mousePostion   = (ImGui::GetIO().MousePos - offset) / scale;
+    // compute mouse position
+    auto glmMousePostion = 
+    glm::translate(
+        glm::mat4(1.f / scale), 
+        glm::vec3(-offset.x, -offset.y, 0.f)) * glm::vec4(ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y, 0.f, 1.f);
+    ImVec2 mousePostion  = ImVec2(glmMousePostion.x, glmMousePostion.y);
 
     drawList->AddText(
         ImGui::GetMousePos(),
@@ -172,7 +175,7 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
     if(m_MouseGrabberPort != nullptr)
     {
         drawList->AddLine(
-            m_MouseGrabberPort->get_rect(true).GetCenter(),
+            m_MouseGrabberPort->get_world_rect(true).GetCenter(),
             ImGui::GetIO().MousePos,
             IM_COL32(255, 0, 0, 255));
     }
@@ -190,19 +193,19 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
                 return;
 
             // apply transformation to an item
-            currentObject->set_transformation(get_transform());
+            currentObject->set_world_transform(get_world_transform());
 
             // check if the item is within scene bounding rect
-            if(!get_rect().Contains(currentObject->get_rect(true).GetTL())  &&
-                !get_rect().Contains(currentObject->get_rect(true).GetTR()) &&
-                !get_rect().Contains(currentObject->get_rect(true).GetBL()) &&
-                !get_rect().Contains(currentObject->get_rect(true).GetBR()))
+            if(!get_world_rect().Contains(currentObject->get_world_rect(true).GetTL())  &&
+                !get_world_rect().Contains(currentObject->get_world_rect(true).GetTR()) &&
+                !get_world_rect().Contains(currentObject->get_world_rect(true).GetBL()) &&
+                !get_world_rect().Contains(currentObject->get_world_rect(true).GetBR()))
                 return;
 
-            currentObject->draw(get_transform());
+            currentObject->draw(get_world_transform());
 
             // catch object mouse events
-            if(currentObject->get_rect(true).Contains(ImGui::GetIO().MousePos))
+            if(currentObject->get_world_rect(true).Contains(ImGui::GetIO().MousePos))
             {
                 // select the item
                 if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
@@ -234,8 +237,8 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
         m_MouseGrabberPort == nullptr)
     {
         // move items
-        auto targetPosition = mousePostion - m_MouseGrabberBlock->get_rect().GetSize() * 0.5f;
-        auto translation    = m_MouseGrabberBlock->get_rect().GetTL() - targetPosition;
+        auto targetPosition = mousePostion - m_MouseGrabberBlock->get_world_rect().GetSize() * 0.5f;
+        auto translation    = m_MouseGrabberBlock->get_world_rect().GetTL() - targetPosition;
 
         m_Selection->apply_function_to_children_recursuve(
             [this, &translation, &gridSize](FactoryObjectHierarchy* _Object)
@@ -246,7 +249,7 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
                 if(selectedObject == nullptr)
                     return;
 
-                auto geometry = selectedObject->get_rect();
+                auto geometry = selectedObject->get_world_rect();
                 auto origin   = geometry.GetTL() - translation;
                 auto size     = geometry.GetSize();
 

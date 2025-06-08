@@ -179,6 +179,7 @@ int main(int, char**)
     (void)ImGuiApplication::Application::Instance()->Push<FBDLayer>();
 
 
+    /*
     std::cout << std::filesystem::path(std::filesystem::current_path()) << "\n";
     std::cout << std::filesystem::path(std::filesystem::current_path().parent_path().wstring().append(L"/shared")).make_preferred() << "\n";
 
@@ -193,6 +194,7 @@ int main(int, char**)
             }
         )
     );
+    */
 
     return ImGuiApplication::Application::Instance()->
         setTitle("ImGuiApplication")->
