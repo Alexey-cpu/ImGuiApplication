@@ -379,17 +379,19 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
         ImVec2 mouse_pos_delta_to_segment = mouse_pos_projected_on_segment - ImGui::GetIO().MousePos;
         is_segment_hovered = (ImLengthSqr(mouse_pos_delta_to_segment) <= max_distance * max_distance);
 
+        //highlight the nearest point point
         if(is_segment_hovered)
         {
-            // highlight the nearest point point
-            // for (size_t j = 1; j < m_TransformedPoints.size() - 1; j++)
-            // {
-            //     if(ImLengthSqr(m_TransformedPoints[j] - ImGui::GetIO().MousePos) < max_distance * 2.f)
-            //     {
-            //         ImGui::GetWindowDrawList()->AddEllipseFilled(m_TransformedPoints[j], ImVec2(16.f, 16.f), IM_COL32(0, 255, 0, 255));
-            //         break;
-            //     }
-            // }
+            for (size_t j = 1; j < m_TransformedPoints.size() - 1; j++)
+            {
+                if(ImLengthSqr(m_TransformedPoints[j] - ImGui::GetIO().MousePos) < max_distance * 2.f)
+                {
+                    ImRect rect = ImRect(m_TransformedPoints[j], m_TransformedPoints[j] + ImVec2(16.f, 16.f));
+
+                    ImGui::GetWindowDrawList()->AddEllipseFilled(m_TransformedPoints[j], rect.GetSize(), IM_COL32(0, 255, 0, 255));
+                    break;
+                }
+            }
             
             break;
         }
