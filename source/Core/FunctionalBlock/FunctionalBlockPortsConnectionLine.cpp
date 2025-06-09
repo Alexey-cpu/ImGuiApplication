@@ -318,6 +318,11 @@ void FunctionalBlockPortsConnectionLine::draw()
             m_LocalPoints[0] = targetPoint;
             m_LocalPoints[m_LocalPoints.size() - 1] = sourcePoint;
         }
+
+        // compute path points in world coordinates
+        m_WorldPoints.resize(m_LocalPoints.size());
+        for (size_t i = 0; i < m_LocalPoints.size(); i++) 
+            m_WorldPoints[i] = FactoryObjectRenderer::transformPoint(m_LocalPoints[i], inverseWorldTransform);
     }
 
     // catch mouse events
