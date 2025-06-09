@@ -234,7 +234,7 @@ void FunctionalBlockExecutionEnvironment::draw()
         m_MouseGrabberPort == nullptr)
     {
         // move items
-        auto targetPosition = mousePostion - m_MouseGrabberBlock->get_world_rect().GetSize() * 0.5f;
+        auto targetPosition = FactoryObjectRenderer::transformPoint(mousePostion, glm::inverse(m_MouseGrabberBlock->get_local_transform())) - m_MouseGrabberBlock->get_world_rect().GetSize() * 0.5f;
         auto translation    = m_MouseGrabberBlock->get_world_rect().GetTL() - targetPosition;
 
         m_Selection->apply_function_to_children_recursuve(
