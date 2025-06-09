@@ -7,8 +7,12 @@
 #include <ImGuiApplicationSettings.h>
 #include <ImGuiApplicationScene2DCanvas.h>
 
+#include <FactoryObjectRect.h>
+
 #include <filesystem>
 #include <iostream>
+
+#include <imgui_impl_glfw.h>
 
 // ImGuiDemoLayer
 class ImGuiDemoLayer : public ImGuiApplication::Layer
@@ -79,31 +83,31 @@ public:
     FBDLayer() : Layer("FBDLayer")
     {
         // create block
-        {
-            auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-1", std::string());
-            parent->set_world_rect(ImRect(ImVec2(512.f, 512.f), ImVec2(512.f, 512.f) + ImVec2(128.f, 128.f)));
-            //parent->set_geometry(FactoryObjectHierarchy::Geometry(ImVec2(32.f, 32.f), ImVec2(128.f, 128.f)));
+        // {
+        //     auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-1", std::string());
+        //     parent->set_world_rect(ImRect(ImVec2(512.f, 512.f), ImVec2(512.f, 512.f) + ImVec2(128.f, 128.f)));
+        //     //parent->set_geometry(FactoryObjectHierarchy::Geometry(ImVec2(32.f, 32.f), ImVec2(128.f, 128.f)));
 
-            // add ports
-            for(int i = 0; i < 4; i++)
-                parent->add_input<double>("In-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
+        //     // add ports
+        //     for(int i = 0; i < 4; i++)
+        //         parent->add_input<double>("In-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
 
-            for(int i = 0; i < 2; i++)
-                parent->add_output<double>("O-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
-        }
+        //     for(int i = 0; i < 2; i++)
+        //         parent->add_output<double>("O-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
+        // }
 
-        // create block
-        {
-            auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-2", std::string());
-            parent->set_world_rect(ImRect(ImVec2(128.f, 128.f), ImVec2(128, 128.f) + ImVec2(128.f, 128.f)));
+        // // create block
+        // {
+        //     auto parent = new FunctionalBlock(m_Environment.get(), "SomeBlock-2", std::string());
+        //     parent->set_world_rect(ImRect(ImVec2(128.f, 128.f), ImVec2(128, 128.f) + ImVec2(128.f, 128.f)));
 
-            // add ports
-            for(int i = 0; i < 4; i++)
-                parent->add_input<double>("In-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
+        //     // add ports
+        //     for(int i = 0; i < 4; i++)
+        //         parent->add_input<double>("In-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
 
-            for(int i = 0; i < 2; i++)
-                parent->add_output<double>("O-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
-        }
+        //     for(int i = 0; i < 2; i++)
+        //         parent->add_output<double>("O-" + std::to_string(i))->set_orientation(FunctionalBlockPort::Orientation::Horizontal);
+        // }
 
         // ImVec2 init = ImVec2(0.f, 0.f);
 
@@ -144,7 +148,19 @@ public:
     // ImGuiApplicationLayer
     virtual void OnUpdate() override
     {
-        m_Environment->draw();
+        FactoryObjectRect r1(
+            glm::vec2(512.f, 512.f), 
+            glm::vec2(512.f, 512.f) + glm::vec2(512.f, 512.f));
+
+        FactoryObjectRect r2(
+            glm::vec2(512.f, 512.f), 
+            glm::vec2(512.f, 512.f) + glm::vec2(256.f, 256.f), 
+            glm::vec2(0.1f, 0.25f));
+
+        r2.rotate((float)glfwGetTime(), glm::vec3(0.f, 0.f, 1.f));
+
+        r1.render(IM_COL32(255, 0, 0, 255));
+        r2.render(IM_COL32(0, 255, 0, 255));
     }
 
 protected:
@@ -169,6 +185,7 @@ int main(int, char**)
     //    std::vector<std::string>({".hpp", ".cpp", ".txt", ".cmake", ".user"}));
 
     //(void)ImGuiApplication::Application::Instance()->Push<ImGuiDemoLayer>();
+    //(void)ImGuiApplication::Application::Instance()->Push<ImGuiApplication::Scene2D::Scene>();
 
     (void)ImGuiApplication::Application::Instance()->Push<FBDLayer>();
 
