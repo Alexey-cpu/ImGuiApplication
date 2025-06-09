@@ -57,7 +57,7 @@ public:
         return false;
     }
 
-    virtual void draw_process(const glm::mat4& _Transform) override;
+    virtual void draw() override;
 
 protected:
 
@@ -65,10 +65,19 @@ protected:
     bool                m_Selected    = false;
     bool                m_Focused     = false;
     bool                m_Direction   = true;
-    bool                m_Smoothed    = false;
-    ImU32               m_Color       = IM_COL32(0, 255, 0, 255);
+    int                 m_CaughtPoint = -1;
     std::vector<ImVec2> m_WorldPoints = std::vector<ImVec2>();
     std::vector<ImVec2> m_LocalPoints = std::vector<ImVec2>();
+
+    // properties
+    ImU32 m_Color            = IM_COL32(0, 255, 0, 255);
+    int   m_DefaultThickness = 4.f;
+    int   m_FocusedThickness = 8.f;
+
+    // service methods
+    void remove_line();
+    void remove_line_point();
+    void insert_line_point();
 };
 
 // FunctionalBlockPortsConnectionLineCreator

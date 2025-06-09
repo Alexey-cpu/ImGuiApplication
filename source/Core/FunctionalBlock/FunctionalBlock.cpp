@@ -328,14 +328,11 @@ bool FunctionalBlock::pugi_deserialize(pugi::xml_node& _Node)
 // GEOMETRY
 //---------------------------------------------------------------------------------------------------------------------
 
-void FunctionalBlock::draw_process(const glm::mat4& _Transform)
+void FunctionalBlock::draw()
 {
     ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Blocks);
 
-
     // draw self
-    set_world_transform(_Transform);
-
     ImGui::GetWindowDrawList()->AddRect(
         get_world_rect(true).GetTL(),
         get_world_rect(true).GetBR(),
@@ -358,7 +355,7 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
         auto drawChannel = 0;
 
         get_inputs_root()->apply_function_to_children_recursuve(
-            [&portOrigin, &portSize, &portOffset, &drawChannel, &_Transform](FactoryObject* _Object)
+            [this, &portOrigin, &portSize, &portOffset, &drawChannel](FactoryObject* _Object)
             {
                 FunctionalBlockPort* port =
                     dynamic_cast<FunctionalBlockPort*>(_Object);
@@ -368,8 +365,8 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
                 {
                     auto origin = portOrigin - portSize * 0.5f;
                     port->set_world_rect(ImRect(ImRect(origin, origin + portSize)));
-                    port->set_world_transform(_Transform);
-                    port->draw(_Transform);
+                    port->set_world_transform(get_world_transform());
+                    port->draw();
                     portOrigin += portOffset;
                     drawChannel++;
                 }
@@ -384,7 +381,7 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
         auto drawChannel = 0;
 
         get_outputs_root()->apply_function_to_children_recursuve(
-            [&portOrigin, &portSize, &portOffset, &drawChannel, &_Transform](FactoryObject* _Object)
+            [this, &portOrigin, &portSize, &portOffset, &drawChannel](FactoryObject* _Object)
             {
                 FunctionalBlockPort* port =
                     dynamic_cast<FunctionalBlockPort*>(_Object);
@@ -394,8 +391,8 @@ void FunctionalBlock::draw_process(const glm::mat4& _Transform)
                 {
                     auto origin = portOrigin - portSize * 0.5f;
                     port->set_world_rect(ImRect(ImRect(origin, origin + portSize)));
-                    port->set_world_transform(_Transform);
-                    port->draw(_Transform);
+                    port->set_world_transform(get_world_transform());
+                    port->draw();
                     portOrigin += portOffset;
                     drawChannel++;
                 }

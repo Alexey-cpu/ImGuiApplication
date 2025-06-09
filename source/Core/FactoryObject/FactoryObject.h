@@ -21,9 +21,6 @@
 //#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-// absl
-#include <absl/container/btree_map.h>
-
 class FactoryObject;
 class FactoryObjectComponent;
 
@@ -447,7 +444,7 @@ private:
         typedef typename std::list<T2>::iterator iterator;
         typedef typename std::list<T2>::const_iterator const_iterator;
         std::list<T2> m_List;
-        absl::btree_map<T1, const_iterator, Compare> m_Map;
+        std::map<T1, const_iterator, Compare> m_Map;
 
     public:
 
@@ -580,7 +577,7 @@ public:
         m_Rect = _Rect;
     }
 
-    void set_world_transform(const glm::mat4& _Transform)
+    virtual void set_world_transform(const glm::mat4& _Transform)
     {
         m_WorldTransform = _Transform;
     }
@@ -591,12 +588,7 @@ public:
     }
 
     // API
-    virtual void draw_process(const glm::mat4& _Transform){}
-
-    void draw(const glm::mat4& _Transform = glm::mat4(1.f))
-    {
-        draw_process(_Transform);
-    }
+    virtual void draw(){}
 
     static ImVec2 transformPoint(const ImVec2& _Point, const glm::mat4& _Transform)
     {
@@ -607,7 +599,7 @@ public:
 protected:
     ImRect    m_Rect           = ImRect(0.f, 0.f, 32.f, 32.f);
     glm::mat4 m_WorldTransform = glm::mat4(1.f);
-    glm::mat4 m_LocalTransform = glm::mat4(1.f);
+    glm::mat4 m_LocalTransform = glm::mat4(0.9);
 };
 
 // FactoryObjectUUIDChecker

@@ -167,11 +167,9 @@ pugi::xml_node FunctionalBlockPort::pugi_serialize(pugi::xml_node& _Parent)
     return data;
 }
 
-void FunctionalBlockPort::draw_process(const glm::mat4& _Transform)
+void FunctionalBlockPort::draw()
 {
     ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Ports);
-
-    set_world_transform(_Transform);
 
     // draw self
     auto rect = ImRect(get_world_rect(true).GetTL(), get_world_rect(true).GetBR());
@@ -200,8 +198,11 @@ void FunctionalBlockPort::draw_process(const glm::mat4& _Transform)
         {
             auto edge = dynamic_cast<FunctionalBlockPortsConnectionLine*>(adjacentEdge);
 
-            if(edge != nullptr)  
-                edge->draw(_Transform);
+            if(edge == nullptr) 
+                continue;
+            
+            edge->set_world_transform(get_world_transform());
+            edge->draw();
         }
     }
 
@@ -228,4 +229,16 @@ void FunctionalBlockPort::draw_process(const glm::mat4& _Transform)
         // reset mouse grabber port
         executionEnvironment->m_MouseGrabberPort = nullptr;
     }
+}
+
+bool FunctionalBlockPort::is_visible() const
+{
+    FunctionalBlockExecutionEnvironment* environment =  
+        get_parent_recursive<FunctionalBlockExecutionEnvironment>();
+
+    FunctionalBlock* block = get_parent_recursive<FunctionalBlock>();
+
+    return environment != nullptr && 
+                block != nullptr  && 
+                    environment->get_world_rect().Contains(block->get_world_rect(true));
 }

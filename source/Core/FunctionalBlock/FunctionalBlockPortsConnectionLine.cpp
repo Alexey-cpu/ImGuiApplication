@@ -251,9 +251,7 @@ public:
         return finishPaths.empty() ? defaultPath : *shortestPath;
     }
 
-    static std::vector<ImVec2> build_rectangular_path(
-        FunctionalBlockPort* source,
-        FunctionalBlockPort* target)
+    static std::vector<ImVec2> build_rectangular_path(FunctionalBlockPort* source, FunctionalBlockPort* target)
     {
         return compute_path(
             source->get_world_rect(true).GetCenter(),
@@ -264,14 +262,19 @@ public:
 };
 
 // FunctionalBlockPortsConnectionLine
-void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transform)
+void FunctionalBlockPortsConnectionLine::draw()
 {
+    ImGui::GetWindowDrawList()->ChannelsSetCurrent(FunctionalBlockExecutionEnvironment::DrawChannels::Lines);
+
     auto source = get_source<FunctionalBlockPort>();
     auto target = get_target<FunctionalBlockPort>();
 
-    if(source == nullptr ||
-        target == nullptr)
+    if(source == nullptr || target == nullptr || !source->is_visible() || !target->is_visible())
         return;
+
+    // update points
+    auto worldTransform        = get_world_transform();
+    auto inverseWorldTransform = glm::inverse(worldTransform);
 
     if(m_WorldPoints.empty() || m_LocalPoints.empty())
     {
@@ -279,10 +282,9 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
         m_LocalPoints = FunctionalBlockPortsConnectionLinePathBuilder::build_rectangular_path(source, target);
 
         // compute path points in world coordinates
-        auto inverseTransform = glm::inverse(_Transform);
         m_WorldPoints.resize(m_LocalPoints.size());
         for (size_t i = 0; i < m_LocalPoints.size(); i++) 
-            m_WorldPoints[i] = FactoryObjectRenderer::transformPoint(m_LocalPoints[i], inverseTransform);
+            m_WorldPoints[i] = FactoryObjectRenderer::transformPoint(m_LocalPoints[i], inverseWorldTransform);
 
         // identidfy path direction
         ImVec2 sourcePoint = source->get_world_rect(true).GetCenter();
@@ -294,7 +296,7 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
         // compute path points in local coordinates
         for (size_t i = 0; i < m_WorldPoints.size(); i++)
         {
-            auto vector = _Transform * glm::vec4(m_WorldPoints[i].x, m_WorldPoints[i].y, 0.f, 1.f);
+            auto vector = worldTransform * glm::vec4(m_WorldPoints[i].x, m_WorldPoints[i].y, 0.f, 1.f);
             m_LocalPoints[i] = ImVec2(vector.x, vector.y);
         }
 
@@ -322,124 +324,77 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
     bool  isHovered   = false;
     float maxDistance = 16.f;
 
+    // identidfy if the line is hovered
     for(size_t i = 1; i < m_LocalPoints.size(); i++)
     {
         // catch mouse
         ImVec2 mousePositionProjectedOnSegment = ImLineClosestPoint(m_LocalPoints[i-0], m_LocalPoints[i-1], ImGui::GetIO().MousePos);
         ImVec2 mousePositionDeltaToSegment     = mousePositionProjectedOnSegment - ImGui::GetIO().MousePos;
-        
-        isHovered = (ImLengthSqr(mousePositionDeltaToSegment) <= maxDistance * maxDistance);
 
-        // highlight the nearest point
-        if(isHovered)
-        {
-            for (size_t j = 1; j < m_LocalPoints.size() - 1; j++)
-            {
-                if(ImLengthSqr(m_LocalPoints[j] - ImGui::GetIO().MousePos) < maxDistance * 4.f)
-                {
-                    ImGui::GetWindowDrawList()->AddEllipseFilled(
-                        m_LocalPoints[j], 
-                        ImVec2(16.f, 16.f) * std::max(std::max(_Transform[0][0], _Transform[1][1]), _Transform[2][2]), 
-                        IM_COL32(0, 255, 0, 255)
-                    );
-
-                    break;
-                }
-            }
-            
+        if((isHovered = (ImLengthSqr(mousePositionDeltaToSegment) <= maxDistance * maxDistance))) 
             break;
+    }
+
+    // identify the nearest to the mouse point
+    int caughtPoint = -1;
+
+    if(isHovered)
+    {
+        for(size_t i = 1; i < m_LocalPoints.size(); i++)
+        {
+            auto localPointBoundingRectSize = ImVec2(16.f, 16.f) * std::max(std::max(worldTransform[0][0], worldTransform[1][1]), worldTransform[2][2]);
+
+            ImRect localPointBoundingRect = 
+                ImRect(m_LocalPoints[i] - localPointBoundingRectSize * 0.5f, m_LocalPoints[i] + localPointBoundingRectSize);
+
+            if(localPointBoundingRect.Contains(ImGui::GetIO().MousePos)) 
+            {
+                caughtPoint = i;
+                break;
+            }
         }
     }
 
     // draw path
-    if(!m_Smoothed)
-    {
-        ImGui::GetWindowDrawList()->AddPolyline(
-            &m_LocalPoints[0],
-            m_LocalPoints.size(),
-            m_Color,
-            ImDrawFlags_::ImDrawFlags_None,
-            isHovered || m_Selected ? 8.f : 1.f
-        );
-    }
-    else
-    {
-            // smooting
-            if(m_LocalPoints.size() >= 4)
-            {
-                ImGui::GetWindowDrawList()->AddBezierCubic(
-                    m_LocalPoints[0],
-                    m_LocalPoints[1],
-                    m_LocalPoints[2],
-                    m_LocalPoints[3],
-                    m_Color,
-                    isHovered || m_Selected ? 8.f : 1.f
-                    );
-            }
-            else if(m_LocalPoints.size() >= 3)
-            {
-                ImGui::GetWindowDrawList()->AddBezierQuadratic(
-                    m_LocalPoints[0],
-                    m_LocalPoints[1],
-                    m_LocalPoints[2],
-                    m_Color,
-                    isHovered || m_Selected ? 8.f : 1.f
-                    );
-            }
-            else
-            {
-                ImGui::GetWindowDrawList()->AddPolyline(
-                    &m_LocalPoints[0],
-                    m_LocalPoints.size(),
-                    m_Color,
-                    ImDrawFlags_::ImDrawFlags_None,
-                    isHovered || m_Selected ? 8.f : 1.f
-                    );
-            }
-    }
+    ImGui::GetWindowDrawList()->AddPolyline(
+        &m_LocalPoints[0],
+        m_LocalPoints.size(),
+        m_Color,
+        ImDrawFlags_::ImDrawFlags_RoundCornersAll,
+        isHovered || m_Selected ? m_FocusedThickness : m_DefaultThickness
+    );
 
     // select line
     if(isHovered || m_Focused)
     {
         // select line
         if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+        {
             m_Selected = true;
+            
+            if(!m_Focused)
+                m_CaughtPoint = caughtPoint;
+        }
 
         // Popup context menu
         if (ImGui::BeginPopupContextItem())
         {
+            if(!m_Focused)
+                m_CaughtPoint = caughtPoint;
+            
             m_Focused = true;
 
             // line editing  is available only in a non-smoothed mode
-            if(!m_Smoothed)
-            {
-                if(ImGui::MenuItem("AddPoint"))
-                {
-                }
-                
-                // remove point
-                if(ImGui::MenuItem("RemovePoint"))
-                {   
-                }
-            }
+            if(ImGui::MenuItem("AddPoint")) 
+                insert_line_point();
+            
+            // remove point
+            if(ImGui::MenuItem("RemovePoint")) 
+                remove_line_point();
 
             // remove self
-            if(ImGui::MenuItem("RemoveLine"))
-            {
-                delete this;
-            }
-
-            // smooth line
-            if(m_Smoothed)
-            {
-                if(ImGui::MenuItem("SharpLine")) 
-                    m_Smoothed = false;
-            }
-            else
-            {
-                if(ImGui::MenuItem("SmoothLine")) 
-                    m_Smoothed = true;
-            }
+            if(ImGui::MenuItem("RemoveLine")) 
+                remove_line();
 
             ImGui::EndPopup();
         }
@@ -451,7 +406,10 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
     else
     {
         if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+        {
             m_Selected = false;
+            m_Focused  = false;
+        }
 
         if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Escape))
         {
@@ -462,7 +420,90 @@ void FunctionalBlockPortsConnectionLine::draw_process(const glm::mat4& _Transfor
 
     if(m_Selected)
     {
+        // remove line
         if(ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete)) 
-            delete this;
+            remove_line();
+
+        // move line point
+        if(ImGui::IsMouseDown(ImGuiMouseButton_::ImGuiMouseButton_Left) && m_CaughtPoint >= 0 && m_CaughtPoint < m_WorldPoints.size())
+        {
+            m_WorldPoints[m_CaughtPoint] = 
+                FactoryObjectRenderer::transformPoint(ImGui::GetIO().MousePos, inverseWorldTransform);
+        }
     }
+
+    // highlight the nearest point
+    if(m_Focused)
+    {
+        if(m_CaughtPoint >= 0 && m_CaughtPoint < m_WorldPoints.size())
+        {
+            ImGui::GetWindowDrawList()->AddEllipseFilled(
+                m_LocalPoints[m_CaughtPoint], 
+                ImVec2(16.f, 16.f) * std::max(std::max(worldTransform[0][0], worldTransform[1][1]), worldTransform[2][2]), 
+                m_Color
+            );
+        }
+    }
+    else
+    {
+        if(isHovered && caughtPoint >= 0 && caughtPoint < m_WorldPoints.size())
+        {
+            ImGui::GetWindowDrawList()->AddEllipseFilled(
+                m_LocalPoints[caughtPoint], 
+                ImVec2(16.f, 16.f) * std::max(std::max(worldTransform[0][0], worldTransform[1][1]), worldTransform[2][2]), 
+                m_Color
+            );
+        }
+    }
+}
+
+void FunctionalBlockPortsConnectionLine::remove_line()
+{
+    delete this;
+}
+
+void FunctionalBlockPortsConnectionLine::remove_line_point()
+{
+    if(m_CaughtPoint < 0 || m_CaughtPoint >= m_WorldPoints.size()) 
+        return;
+
+    m_WorldPoints.erase(m_WorldPoints.begin() + m_CaughtPoint);
+    m_LocalPoints.erase(m_LocalPoints.begin() + m_CaughtPoint);
+    m_CaughtPoint = -1;
+}
+
+void FunctionalBlockPortsConnectionLine::insert_line_point()
+{
+    // compute transform
+    auto worldTransform        = get_world_transform();
+    auto inverseWorldTransform = glm::inverse(worldTransform);
+
+    // look for the point where to insert
+    size_t caughtPoint = -1;
+    float  minDistance = std::numeric_limits<float>::max();
+
+    for(size_t i = 1; i < m_LocalPoints.size(); i++)
+    {
+        auto length = ImLengthSqr(ImVec2(m_LocalPoints[i] - ImGui::GetIO().MousePos));
+
+        if(length < minDistance)
+        {
+            minDistance = length;
+            caughtPoint = i;
+        }
+    }
+
+    caughtPoint =
+        std::max<size_t>(std::min(caughtPoint, m_LocalPoints.size() - 1), 1);
+
+    if(caughtPoint < 0 || caughtPoint >= m_WorldPoints.size()) 
+        return;
+
+    // insert point into local coordinate system path
+    m_LocalPoints.insert(m_LocalPoints.begin() + caughtPoint, ImGui::GetIO().MousePos);
+
+    // compute path points in world coordinates
+    m_WorldPoints.resize(m_LocalPoints.size());
+    for (size_t i = 0; i < m_LocalPoints.size(); i++) 
+        m_WorldPoints[i] = FactoryObjectRenderer::transformPoint(m_LocalPoints[i], inverseWorldTransform);
 }

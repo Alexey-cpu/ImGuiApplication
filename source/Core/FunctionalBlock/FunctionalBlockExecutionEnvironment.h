@@ -147,7 +147,7 @@ public:
 
     virtual pugi::xml_node pugi_serialize(pugi::xml_node& _Parent) override;
     virtual bool pugi_deserialize(pugi::xml_node& _Node) override;
-    virtual void draw_process(const glm::mat4& _Transform) override;
+    virtual void draw() override;
 
     FunctionalBlock* m_MouseGrabberBlock = nullptr;
     FunctionalBlockPort* m_MouseGrabberPort  = nullptr;

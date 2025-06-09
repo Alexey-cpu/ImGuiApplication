@@ -74,7 +74,9 @@ public:
     //----------------------------------------------------------------------------------
     // GEOMETRY
     //----------------------------------------------------------------------------------
-    virtual void draw_process(const glm::mat4& _Transform) override;
+    virtual void draw() override;
+
+    bool is_visible() const;
 
     ImU32 m_Color = IM_COL32(
         (*Singleton<PseudoRandomNumberGenerator<int>>::Instance())(0, 255),

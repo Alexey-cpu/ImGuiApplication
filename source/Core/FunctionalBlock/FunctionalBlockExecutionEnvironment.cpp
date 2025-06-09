@@ -84,7 +84,7 @@ bool FunctionalBlockExecutionEnvironment::pugi_deserialize(pugi::xml_node& _Node
     return true;
 }
 
-void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transform)
+void FunctionalBlockExecutionEnvironment::draw()
 {
     ImGui::Begin(get_name().c_str());
 
@@ -196,13 +196,10 @@ void FunctionalBlockExecutionEnvironment::draw_process(const glm::mat4& _Transfo
             currentObject->set_world_transform(get_world_transform());
 
             // check if the item is within scene bounding rect
-            if(!get_world_rect().Contains(currentObject->get_world_rect(true).GetTL())  &&
-                !get_world_rect().Contains(currentObject->get_world_rect(true).GetTR()) &&
-                !get_world_rect().Contains(currentObject->get_world_rect(true).GetBL()) &&
-                !get_world_rect().Contains(currentObject->get_world_rect(true).GetBR()))
+            if(!get_world_rect().Contains(currentObject->get_world_rect(true)))
                 return;
 
-            currentObject->draw(get_world_transform());
+            currentObject->draw();
 
             // catch object mouse events
             if(currentObject->get_world_rect(true).Contains(ImGui::GetIO().MousePos))
