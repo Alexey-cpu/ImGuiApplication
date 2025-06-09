@@ -541,6 +541,7 @@ private:
     void detach_child(FactoryObjectHierarchy* _Object);
 };
 
+// FactoryObjectRenderer
 class FactoryObjectRenderer
 {
 public:
@@ -599,7 +600,7 @@ public:
 protected:
     ImRect    m_Rect           = ImRect(0.f, 0.f, 32.f, 32.f);
     glm::mat4 m_WorldTransform = glm::mat4(1.f);
-    glm::mat4 m_LocalTransform = glm::mat4(1.5);
+    glm::mat4 m_LocalTransform = glm::mat4(1.f);
 };
 
 // FactoryObjectUUIDChecker

@@ -136,7 +136,7 @@ void FunctionalBlockExecutionEnvironment::draw()
         drawList->AddRect(get_world_rect().GetTL(), get_world_rect().GetBR(), IM_COL32(0, 255, 0, 255));
     }
 
-    // draw grid and mouse tacking cursor
+    // draw grid
     auto rect      = get_world_rect();
     auto transform = get_world_transform();
     auto offset    = ImVec2(transform[3][0], transform[3][1]);
