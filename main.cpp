@@ -150,17 +150,33 @@ public:
     {
         FactoryObjectRect r1(
             glm::vec2(512.f, 512.f), 
-            glm::vec2(512.f, 512.f) + glm::vec2(512.f, 512.f));
+            glm::vec2(512.f, 512.f) + glm::vec2(512.f, 256.f), 
+            glm::vec2(0.0f, 0.0f));
 
         FactoryObjectRect r2(
-            glm::vec2(512.f, 512.f), 
-            glm::vec2(512.f, 512.f) + glm::vec2(256.f, 256.f), 
-            glm::vec2(0.1f, 0.25f));
+            glm::vec2(0.f, 0.f), 
+            glm::vec2(0.f, 0.f) + glm::vec2(256.f, 256.f), 
+            glm::vec2(0.5f, 0.5f), 
+            &r1);
+
+        FactoryObjectRect r3(
+            glm::vec2(0.f, 0.f), 
+            glm::vec2(0.f, 0.f) + glm::vec2(128.f, 64.f), 
+            glm::vec2(0.5f, 0.5f), 
+            &r2);
+
+        FactoryObjectRect r4(
+            glm::vec2(0.f, 0.f), 
+            glm::vec2(0.f, 0.f) + glm::vec2(63.f, 32.f), 
+            glm::vec2(0.5f, 0.5f), 
+            &r2);
 
         r2.rotate((float)glfwGetTime(), glm::vec3(0.f, 0.f, 1.f));
 
         r1.render(IM_COL32(255, 0, 0, 255));
         r2.render(IM_COL32(0, 255, 0, 255));
+        r3.render(IM_COL32(0, 0, 255, 255));
+        r4.render(IM_COL32(0, 255, 255, 255));
     }
 
 protected:
